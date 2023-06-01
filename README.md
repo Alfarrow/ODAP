@@ -7,4 +7,8 @@ https://github.com/aizzat/ackermann_vehicle.
 
 El robot está siendo desarrollado usando ROS Noetic.
 
+**Modelo R2 en Gazebo:**
 ![R2 en Gazebo](images/R2.jpg)
+
+**R2 y LiDAR**
+![R2 Lidar](images/R2_lidar.jpg)

@@ -1,0 +1,43 @@
+
+# Publicar los estados de todos los joints
+joint_state_ctrlr:
+  type: joint_state_controller/JointStateController
+  publish_rate: 30
+
+# Controladores de Posición
+# Direccionador Derecho
+right_steering_ctrlr:
+  type: position_controllers/JointPositionController
+  joint: right_steering_joint
+  pid: {p: 4.0, i: 0.0, d: 1.0}
+
+# Direccionador Izquierdo
+left_steering_ctrlr:
+  type: position_controllers/JointPositionController
+  joint: left_steering_joint
+  pid: {p: 4.0, i: 0.0, d: 1.0}
+
+# Controladores de Velocidad
+# Rueda trasera derecha
+right_rear_axle_ctrlr:
+  type: velocity_controllers/JointVelocityController
+  joint: right_rear_axle
+  pid: {p: 1.5, i: 1.0, d: 0.0} 
+
+# Rueda frontal derecha
+right_front_axle_ctrlr:
+  type: velocity_controllers/JointVelocityController
+  joint: right_front_axle
+  pid: {p: 1.5, i: 1.0, d: 0.0} 
+  
+# Rueda trasera izquierda
+left_rear_axle_ctrlr:
+  type: velocity_controllers/JointVelocityController
+  joint: left_rear_axle
+  pid: {p: 1.5, i: 1.0, d: 0.0}
+
+# Rueda frontal izquierda
+left_front_axle_ctrlr:
+  type: velocity_controllers/JointVelocityController
+  joint: left_front_axle
+  pid: {p: 1.5, i: 1.0, d: 0.0}

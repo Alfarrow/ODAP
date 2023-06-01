@@ -1,0 +1,16 @@
+<launch>
+  <arg name="namespace" default="R2"/>
+
+  <group ns="$(arg namespace)">
+    <!-- Descripción del robot para publicar su estado posteriormente -->
+    <param name="robot_description"
+           command="$(find xacro)/xacro '$(find odap)/src/r2_description/urdf/R2.urdf.xacro'"/>
+
+    <!--Leer las posiciones de los joints desde "joint_states", luego publicar
+        el estado del vehículo a tf-->
+    <node name="vehicle_state_publisher" pkg="robot_state_publisher"
+          type="robot_state_publisher">
+      <param name="publish_frequency" value="30.0"/>
+    </node>
+  </group>
+</launch>

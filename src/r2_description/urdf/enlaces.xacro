@@ -1,0 +1,126 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+<!--|Macro para "steerings"-->
+    <xacro:macro name="steering" params="prefix radius length mass mesh flag">
+        <!-- Calculando los valores de inercia para un cilindro -->
+        <xacro:property name="ixx" value="${0.0833*mass*radius*radius}" />
+        <xacro:property name="iyy" value="${0.5*mass*radius*radius}" />
+        <xacro:property name="izz" value="${0.0833*mass*radius*radius}" />
+
+        <link name="${prefix}_steer">
+            <inertial>
+                <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+                <mass value="${mass}"/>
+                <inertia ixx="${ixx}" ixy="0.0" ixz="0.0"
+                         iyy="${iyy}" iyz="0.0" 
+                         izz="${izz}"/>
+            </inertial>
+
+            <visual>
+                <xacro:if value="${flag == 1}">
+                    <origin xyz="0 0 0" rpy="0 0 0"/>
+                    <geometry>
+                        <mesh filename="${mesh}"/>
+                    </geometry>
+                </xacro:if>
+                <xacro:if value="${flag == 0}">
+                    <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+                    <geometry>
+                        <cylinder length="${length}" radius="${radius}"/>
+                    </geometry>
+                </xacro:if>
+            </visual>
+
+            <collision>
+                <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+                <geometry>
+                    <cylinder length="${length}" radius="${radius}"/>
+                </geometry>
+            </collision>
+        </link>
+    </xacro:macro>
+
+<!--|Macro para "wheels"-->
+    <xacro:macro name="wheel" params="prefix radius length mass mesh flag">
+        <!-- Calculando los valores de inercia para un cilindro -->
+        <xacro:property name="ixx" value="${0.0833*mass*radius*radius}" />
+        <xacro:property name="iyy" value="${0.5*mass*radius*radius}" />
+        <xacro:property name="izz" value="${0.0833*mass*radius*radius}" />
+
+        <link name="${prefix}_wheel">
+            <inertial>
+                <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+                <mass value="${mass}"/>
+                <inertia ixx="${ixx}" ixy="0.0" ixz="0.0"
+                         iyy="${iyy}" iyz="0.0" 
+                         izz="${izz}"/>
+            </inertial>
+
+            <visual>
+                <xacro:if value="${flag == 1}">
+                    <origin xyz="0 0 0" rpy="0 0 0"/>
+                    <geometry>
+                        <mesh filename="${mesh}"/>
+                    </geometry>
+                </xacro:if>
+                <xacro:if value="${flag == 0}">
+                    <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+                    <geometry>
+                        <cylinder length="${length}" radius="${radius}"/>
+                    </geometry>
+                </xacro:if>
+                <material name="">
+                    <color rgba="0.0 0.0 0.0 1" />
+                </material>
+            </visual>
+
+            <collision>
+                <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+                <geometry>
+                    <cylinder length="${length}" radius="${radius}"/>
+                </geometry>
+            </collision>
+        </link>
+    </xacro:macro>
+
+<!--|Macro Transmisiones Steering-->
+    <xacro:macro name="steering_transmission" params="prefix joint">
+        <transmission name="${prefix}_steering_joint_trans">
+            <type>transmission_interface/SimpleTransmission</type>
+            <joint name="${joint}">
+                <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+            </joint>
+            <actuator name="${prefix}_steering_joint_act">
+                <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+                <mechanicalReduction>1</mechanicalReduction>
+            <!--motorTorqueConstant>100</motorTorqueConstant-->
+            </actuator>
+        </transmission>
+    </xacro:macro>
+
+<!--|Macro Transmisiones Llantas-->
+<xacro:macro name="wheel_transmission" params="side location joint">
+    <transmission name="${side}_${location}_axle_trans">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="${joint}">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="${side}_${location}_axle_act">
+            <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+</xacro:macro>
+
+
+
+
+
+
+</robot>
+
+
+
+
+

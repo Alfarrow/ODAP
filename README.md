@@ -6,3 +6,5 @@ los archivos de lanzamiento para Gazebo y Rviz y por último un nodo controlador
 https://github.com/aizzat/ackermann_vehicle.
 
 El robot está siendo desarrollado usando ROS Noetic.
+
+![R2 en Gazebo](images/R2.jpg)

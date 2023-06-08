@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <robot name= "R2" xmlns:xacro="http://ros.org/wiki/xacro">
-    <!--Incluir xacros-macros de enlaces y del lidar-->
+    <!--Incluir xacros-macros de enlaces y sensores-->
     <xacro:include filename="$(find odap)/src/r2_description/urdf/enlaces.xacro"/>
-    <xacro:include filename="$(find odap)/src/r2_description/urdf/lidar.xacro"/>
-    
+    <xacro:include filename="$(find odap)/src/r2_description/urdf/lidar.xacro"/>   
 
 <!--imu_link-->
   <link name="imu_link"/>

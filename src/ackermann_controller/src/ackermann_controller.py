@@ -311,7 +311,14 @@ class _AckermannCtrlr(object):
             if self._right_rear_axle_cmd_pub:
                 self._right_rear_axle_cmd_pub.publish(self._right_rear_ang_vel)
 
-            self._sleep_timer.sleep()
+#!!MODIFICADO
+            # self._sleep_timer.sleep()
+            try:
+                self._sleep_timer.sleep()
+            except rospy.exceptions.ROSTimeMovedBackwardsException:
+                # Reinicializa el estado aquí
+                pass
+
 
     def ackermann_cmd_cb(self, ackermann_cmd):
         """Ackermann driving command callback
@@ -380,10 +387,8 @@ class _AckermannCtrlr(object):
                 trans, not_used = \
                     tfl.lookupTransform(self._right_rear_link_name, link,
                                         rospy.Time(0))
-                print(f"Se pudo obtener la posición del enlace {link} con respecto a la posición de la rueda trasera derecha")
                 return numpy.array(trans)
             except:
-                print(f"NO se pudo obtener la posición del enlace {link} con respecto a la posición de la rueda trasera derecha")
                 pass
 
     def _ctrl_steering(self, steer_ang, steer_ang_vel_limit, delta_t):

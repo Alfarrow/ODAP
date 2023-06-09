@@ -3,6 +3,7 @@
     <arg name="cmd_timeout" default="0.5"/>
     <arg name="world" default="$(find odap)/src/r2_gazebo/worlds/real_room.world"/>
 
+
     <!--Pose del Vehículo-->
     <arg name="x" default="9.0"/>
     <arg name="y" default="-1.0"/>
@@ -31,27 +32,12 @@
             -gazebo_namespace /$(arg namespace)/gazebo
             -x $(arg x) -y $(arg y) -z $(arg z)
             -R $(arg roll) -P $(arg pitch) -Y $(arg yaw)"/>
-        <!--Nodo Spawner-->
+
+        <!--Nodo Controller Spawner-->
         <node name="controller_spawner" pkg="controller_manager" type="spawner"
             args="joint_state_ctrlr right_steering_ctrlr left_steering_ctrlr right_rear_axle_ctrlr left_rear_axle_ctrlr
             left_front_axle_ctrlr right_front_axle_ctrlr"/>
 
-        <!--Nodo Controlador-->
-        <node name="ackermann_controller" pkg="odap"
-            type="ackermann_controller.py" output="screen">
-            <param name="cmd_timeout" value="$(arg cmd_timeout)"/>
-            <rosparam file="$(find odap)/src/r2_description/config/params_nodo_controlador.yaml" command="load"/>
-        </node>
     </group>
-
-    <!--Nodo convertidor de velocidad cmd_vel a ackermann_drive-->
-    <node name="cmd_vel_to_ackermann" pkg="odap" type="cmd_vel_to_ackermann_drive.py"/>
-
-    <!--rqt para publicar por cmd_vel-->
-    <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
-    <!-- Configurar el tópico para publicar -->
-        <param name="topic_name" value="/cmd_vel"/>
-
-    </node>
 
 </launch>

@@ -145,6 +145,50 @@
         <origin xyz="0.012548 0.0 0.105"/>
     </joint>
 
+<!--|Sensor de contacto-->
+    <link name="base_bumper">
+        <!-- <visual>
+            <geometry>
+                <box size="0.342 0.205 0.11"/>
+            </geometry>
+        </visual> -->
+
+        <collision>
+            <geometry>
+                <box size="0.342 0.205 0.11"/>
+            </geometry>
+        </collision>
+
+        <inertial>
+            <mass value="1e-5" />
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+        </inertial>
+    </link>
+
+    <joint name="base_to_bumper" type="fixed">
+        <parent link="base_link"/>
+        <child link="base_bumper"/>
+        <origin xyz="0.0134 0 0.04" rpy="0 0 0"/> 
+    </joint>
+    
+    <gazebo reference="base_bumper">
+        <sensor type="contact" name="main_bumper">
+            <always_on>true</always_on>
+            <update_rate>15.0</update_rate>
+            <contact>
+                <collision>base_bumper_collision</collision>
+            </contact>
+            <plugin name="gazebo_ros_bumper_controller" filename="libgazebo_ros_bumper.so">
+                <bumperTopicName>/R2/bumper</bumperTopicName>
+                <frameName>world</frameName>
+            </plugin>
+        </sensor>
+    </gazebo>
+
+
+
+
 <!--|Elementos para GAZEBO-->
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">

@@ -78,13 +78,13 @@
             </noise>
 
             <plugin name="gazebo_ros_laser_controller" filename="libgazebo_ros_laser.so">
-                <topicName>/my_robot/laser/scan</topicName>
+                <topicName>/R2/laser/scan</topicName>
                 <frameName>laz_rot</frameName>
                 <updateRate>6.0</updateRate>
                 <minRange>0.15</minRange>
                 <maxRange>12.0</maxRange>
-                <minIntensity>0.0</minIntensity>
-                <maxIntensity>20.0</maxIntensity>
+                <!-- <minIntensity>0.0</minIntensity>
+                <maxIntensity>20.0</maxIntensity> -->
                 <noise>
                     <type>gaussian</type>
                     <mean>0.0</mean>
@@ -120,8 +120,7 @@
         <parent link="laz_base"/>
         <child link="laz_rot"/>
         <axis xyz="0.0 0.0 1.0"/>
-        <origin xyz="0.0 0.0 ${base_height}"/>
-        <dynamics friction="0.1"/>    
+        <origin xyz="0.0 0.0 ${base_height}"/> 
     </joint>
 
 </robot>

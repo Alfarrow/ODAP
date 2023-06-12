@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     
-    <arg name="cmd_timeout" default="0.5"/>
+    <arg name="cmd_timeout" default="0.0"/>
 
     <!--Nodo Controlador-->
     <node name="ackermann_controller" pkg="odap"
@@ -14,10 +14,10 @@
     <node name="cmd_vel_to_ackermann" pkg="odap" type="cmd_vel_to_ackermann_drive.py"/>
 
     <!--rqt para publicar por cmd_vel-->
-    <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
-    <!-- Configurar el tópico para publicar -->
+    <!-- <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
         <param name="topic_name" value="/cmd_vel"/>
+    </node> -->
 
-    </node>
+    <node name="keyboard_control" pkg="odap" type="keyboard_control.py" />
 
 </launch>

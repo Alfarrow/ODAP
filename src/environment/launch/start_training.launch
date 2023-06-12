@@ -1,0 +1,4 @@
+<launch>
+    <!-- Launch the training system -->
+    <node pkg="odap" name="training" type="random_agent.py" output="screen"/>
+</launch>

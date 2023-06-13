@@ -18,6 +18,7 @@
         <param name="topic_name" value="/cmd_vel"/>
     </node> -->
 
-    <node name="keyboard_control" pkg="odap" type="keyboard_control.py" />
+    <!--Control por Teclado-->
+    <!-- <node name="keyboard_control" pkg="odap" type="keyboard_control.py" /> -->
 
 </launch>

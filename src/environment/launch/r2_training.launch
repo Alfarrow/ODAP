@@ -1,0 +1,4 @@
+<launch>
+    <!-- Launch the training system -->
+    <node pkg="odap" name="r2_training" type="r2_training.py" output="screen"/>
+</launch>

@@ -36,6 +36,8 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
         rospy.Subscriber("/R2/scan", LaserScan, self._laser_scan_callback)
         rospy.Subscriber("/R2/bumper", ContactsState, self._bumper_callback)
 
+        # Variable para detectar si se está en colisión
+        self.collision = False
 
         # Revisar que todo esté listo
         self._check_all_systems_ready()
@@ -65,12 +67,14 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
         """
         if contact_data.states:  # If the bumper sensor returns a non-empty list, the robot hit something
             self._episode_done = True
+            self.collision = True
+            
     
 #! Funciones vacías que se configurarán de preferencia en el Task Environment
-    # def _set_init_pose(self):
-    #     """Sets the Robot in its init pose
-    #     """
-    #     raise NotImplementedError()
+    def _set_init_pose(self):
+        """Sets the Robot in its init pose
+        """
+        raise NotImplementedError()
     
     def _init_env_variables(self):
         """Inits variables needed to be initialised each time we reset at the start

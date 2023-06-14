@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import numpy as np
+import collections
 import rospy
+from rospy import get_param
 import r2env
 from geometry_msgs.msg import Twist
 
@@ -12,28 +14,38 @@ from gym.envs.registration import register
 from gazebo_msgs.msg import ModelState
 from gazebo_msgs.srv import GetModelState, GetModelStateRequest, SetModelState
 
-timestep_limit_per_episode = 500
+from tf.transformations import euler_from_quaternion
 
 register(
-        id='R2Env-v0',
-        entry_point='taskenv:R2TaskEnv',
-        max_episode_steps=timestep_limit_per_episode,
+        id='R2Env-v1',
+        entry_point='r2taskenv:R2TaskEnv',
+        max_episode_steps=get_param('Training/timestep_limit_per_episode')
     )
 
 class R2TaskEnv(r2env.R2Env):
     #| Función de Inicio
     def __init__(self):
 
+        # Nombre del robot
+        self.robot_name = get_param("Training/robot_name")
+
         # Definir espacio de acciones
         self.action_space = spaces.Discrete(7)
 
         # Definir espacio de observación
-        min_distance = 0.15
-        max_distance = 12.0
-        num_lidar_measurements = 281
+        min_distance = get_param('Training/min_distance')
+        max_distance = get_param('Training/max_distance')
+        num_lidar_measurements = get_param('Training/num_lidar_measurements')
         low = np.full((num_lidar_measurements,), min_distance)
         high = np.full((num_lidar_measurements,), max_distance)
-        self.observation_space = spaces.Box(low, high, dtype=np.float32)
+        laser_box = spaces.Box(low, high, dtype=np.float32)
+        self.observation_space = spaces.Tuple([
+            laser_box,
+            laser_box,
+            laser_box,
+            spaces.Box(low=np.array([0.0, -np.pi]), high=np.array([np.inf, np.pi]), dtype=np.float32)
+        ])
+
 
         # Show Info
         rospy.logdebug("ACTION SPACES TYPE===>"+str(self.action_space))
@@ -41,9 +53,20 @@ class R2TaskEnv(r2env.R2Env):
 
         # Iniciar contador de steps
         self.cumulated_steps = 0.0
+        self.max_steps_reached = False
+        self.max_episode_steps = get_param('Training/timestep_limit_per_episode')
+
+        # Cargar configuración de entrenamiento
+        #* Meta
+        self.goal_x = get_param('Training/x_goal')
+        self.goal_y = get_param('Training/y_goal')
+        print("Goal: ", self.goal_x, self.goal_y)
+
+        # Variables que se usarán para el cálculo de la recompensa
+        self.last_dist_to_goal = self.calculate_dist_to_goal()
+        self.last_angle_to_goal = self.calculate_angle_to_goal()
 
         super(R2TaskEnv, self).__init__()
-
 
     #| Establece la pose inicial del robot
     def _set_init_pose(self):
@@ -60,7 +83,7 @@ class R2TaskEnv(r2env.R2Env):
             state_msg.pose.orientation.x = 0.0
             state_msg.pose.orientation.y = 0.0
             state_msg.pose.orientation.z = 0.0
-            state_msg.pose.orientation.w = 0.0
+            state_msg.pose.orientation.w = 1.0
             state_msg.reference_frame = 'world'
             resp = set_state(state_msg)
             
@@ -72,8 +95,7 @@ class R2TaskEnv(r2env.R2Env):
             rospy.logerr("Service call failed: %s" % e)
 
         return True
-
-    
+   
     #| Variables que se inicializarán al comenzar un episodio
     def _init_env_variables(self):
         """
@@ -82,23 +104,55 @@ class R2TaskEnv(r2env.R2Env):
         :return:
         """
         # For Info Purposes
-        self.cumulated_reward = 0.0
+        self.cumulated_steps = 0.0
         # Set to false Done, because its calculated asyncronously
         self._episode_done = False
 
+        self.last_dist_to_goal = self.calculate_dist_to_goal()
+        self.last_angle_to_goal = self.calculate_angle_to_goal()
+        self.collision = False
+
     #| Publica las velocidades según la acción elegida
     def _set_action(self, action):
-        self.action_pub.publish(action) # El publicador se hereda de robotenv
+        self.cumulated_steps += 1  # Incrementa el número de pasos realizados
+        if self.cumulated_steps >= self.max_episode_steps:  # Si se han alcanzado los pasos máximos
+            self.max_steps_reached = True  # Marca la variable como True
+            self._episode_done = True  # Y también indica que el episodio ha terminado
+        self.action_pub.publish(action)
 
     #| Obtener observación
     def _get_obs(self):
         rospy.logdebug("Start Get Observation ==>")
-        # We get the laser scan data
-        laser_scan = self.get_laser_scan()
-        # We replace the 'inf' values with -1
-        laser_scan = self._replace_inf_with_minus_one(laser_scan)
+
+        # Lista para almacenar los últimos escaneos láser
+        self.last_scans = []
+
+        # Repetir si no se tienen todos los escaneos que se requieren
+        while len(self.last_scans) < 3:
+            # We get the laser scan data
+            scan = self.get_laser_scan()
+
+            # Reemplazar 'inf' con -1
+            scan = self._replace_inf_with_minus_one(scan)
+
+            # Añadir a la cola
+            self.last_scans.append(scan)
+
         rospy.logdebug("END Get Observation ==>")
-        return laser_scan
+
+        # Distancia
+        dist_to_goal = self.calculate_dist_to_goal()
+        # Ángulo
+        angle_to_goal = self.calculate_angle_to_goal()
+
+        # Para el cálculo de la recompensa
+        # self.last_dist_to_goal = dist_to_goal
+
+        if len(self.last_scans) == 3:
+            return [self.last_scans[0], self.last_scans[1], self.last_scans[2], np.array([dist_to_goal, angle_to_goal])]
+        else:
+            rospy.logwarn("Not enough scans in self.last_scans!")
+            return None
     
     #| Revisar si el episodio terminó
     def _is_done(self, *args):
@@ -106,12 +160,40 @@ class R2TaskEnv(r2env.R2Env):
     
     #| Calcular recompensa
     def _compute_reward(self, observations, done):
-        reward = 1
+        current_dist = observations[3][0]
+        current_angle = observations[3][1]
+        last_dist_to_goal = self.last_dist_to_goal
+        last_angle_to_goal = self.last_angle_to_goal
+        self.last_dist_to_goal = current_dist  # Actualiza la última distancia
+        self.last_angle_to_goal = current_angle
+
+        reward = 0
+
+        if done:
+            if self.collision:  # Si hubo una colisión
+                reward = -20
+            elif self.max_steps_reached:  # Si se alcanzó el número máximo de pasos
+                reward = -20
+            elif current_dist <= 0.1:  # Si se está a 10 cm o menos de la meta
+                reward = 20
+            else:
+                reward = 0  # Este caso no debería suceder, pero se deja por seguridad
+        else:
+            # Si la distancia al objetivo es menor que antes, se da una recompensa pequeña, si no, una recompensa negativa pequeña.
+            if current_dist < last_dist_to_goal:
+                reward += 1
+            else:
+                reward -= 1
+            if abs(current_angle) < abs(last_angle_to_goal):
+                reward += 0.5
+            else:
+                reward -= 0.5
+
         return reward
-    
 
     
 #! Funciones Extra
+    # Reemplazar inf con -1
     def _replace_inf_with_minus_one(self, laser_scan):
         # Convert the laser scan data into a NumPy array
         laser_scan_np = np.array(laser_scan.ranges)
@@ -119,3 +201,52 @@ class R2TaskEnv(r2env.R2Env):
         laser_scan_np[np.isinf(laser_scan_np)] = -1
         # Convert the NumPy array back into a list and return
         return laser_scan_np.tolist()
+    
+    # Obtener posición del robot
+    def get_robot_pose(self):
+        model_state_client = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+        try:
+            response = model_state_client(self.robot_name, 'world')
+            return response.pose.position
+        except rospy.ServiceException as e:
+            rospy.logerr("Service call failed: %s" % e)
+            return None
+
+    # Obtener orientación del robot
+    def get_robot_orientation(self):
+        model_state_client = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+        try:
+            response = model_state_client(self.robot_name, 'world')
+            orientation_q = response.pose.orientation
+            orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+            (_, _, yaw) = euler_from_quaternion(orientation_list)
+            return yaw
+        except rospy.ServiceException as e:
+            rospy.logerr("Service call failed: %s" % e)
+            return None
+
+    # Calcular distancia al objetivo
+    def calculate_dist_to_goal(self):
+        robot_pose = self.get_robot_pose()
+
+        # Distancia
+        dist_to_goal = np.sqrt((self.goal_x - robot_pose.x)**2 + (self.goal_y - robot_pose.y)**2)
+
+        return dist_to_goal
+       
+    # Calcular ángulo al objetivo
+    def calculate_angle_to_goal(self):
+        robot_pose = self.get_robot_pose()
+
+        # Ángulo global al objetivo
+        global_angle_to_goal = np.arctan2(self.goal_y - robot_pose.y, self.goal_x - robot_pose.x)
+
+        # Orientación del robot
+        robot_orientation = self.get_robot_orientation()
+
+        # Ángulo relativo al objetivo
+        relative_angle_to_goal = global_angle_to_goal - robot_orientation
+
+        return relative_angle_to_goal
+    
+

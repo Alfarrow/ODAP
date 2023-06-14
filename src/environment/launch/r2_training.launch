@@ -1,4 +1,7 @@
 <launch>
+    <!--Cargar Parámetros-->
+    <rosparam file="$(find odap)/src/environment/config/training_params.yaml" command="load" />
+
     <!-- Launch the training system -->
     <node pkg="odap" name="r2_training" type="r2_training.py" output="screen"/>
 </launch>

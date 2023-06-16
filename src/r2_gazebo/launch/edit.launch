@@ -1,6 +1,6 @@
 <launch>
     <arg name="namespace" default="/"/>
-    <arg name="world" default="$(find odap)/src/r2_gazebo/worlds/real_room_copy.world"/>
+    <arg name="world" default="$(find odap)/src/r2_gazebo/worlds/training_room.world"/>
 
 
     <!-- Crear mundo -->

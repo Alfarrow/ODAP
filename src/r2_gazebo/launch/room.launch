@@ -1,15 +1,15 @@
 <launch>
     <arg name="namespace" default="/"/>
-    <arg name="world" default="$(find odap)/src/r2_gazebo/worlds/final_room.world"/>
+    <arg name="world" default="$(find odap)/src/r2_gazebo/worlds/training_room.world"/>
 
 
     <!--Pose del Vehículo-->
-    <arg name="x" default="4.0"/>
-    <arg name="y" default="-7.0"/>
+    <arg name="x" default="0.0"/>
+    <arg name="y" default="0.0"/>
     <arg name="z" default="0.01"/>
     <arg name="roll" default="0.0"/>
     <arg name="pitch" default="0.0"/>
-    <arg name="yaw" default="90.0"/>
+    <arg name="yaw" default="0.0"/>
 
     <!--Cargar otro el launch del robot-->
     <include file="$(find odap)/src/r2_description/launch/R2.launch">

@@ -4,4 +4,8 @@
 
     <!-- Launch the training system -->
     <node pkg="odap" name="r2_training" type="r2_training.py" output="screen"/>
+
+    <!--Nodo para graficar métricas-->
+    <node pkg="odap" name="Metrics" type="metrics_plot.py" output="screen"/>
+
 </launch>

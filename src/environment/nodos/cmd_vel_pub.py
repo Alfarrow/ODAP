@@ -10,7 +10,7 @@ class VelocityPublisherNode:
         self.vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
         self.action_sub = rospy.Subscriber('/action', Int32, self.action_callback)
         self.vel_cmd = Twist()
-        self.actions = [(0.5, 0.0), (0.5, 0.4), (0.5, -0.4), (-0.5, 0.0), (-0.5, -0.4), (-0.5, 0.4), (0, 0)]
+        self.actions = [(1.0, 0.0), (1.0, 0.8), (1.0, -0.8), (-1.0, 0.0), (-1.0, -0.8), (-1.0, 0.8), (0, 0)]
 
     def action_callback(self, msg):
         try:

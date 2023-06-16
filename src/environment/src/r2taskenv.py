@@ -125,33 +125,36 @@ class R2TaskEnv(r2env.R2Env):
         rospy.logdebug("Start Get Observation ==>")
 
         # Lista para almacenar los últimos escaneos láser
-        self.last_scans = []
+        last_scans = []
+        # Lista para distancias y ángulos al objetivo
+        distances = []
+        angles = []
 
         # Repetir si no se tienen todos los escaneos que se requieren
-        while len(self.last_scans) < 3:
+        while len(last_scans) < 3:
             # We get the laser scan data
             scan = self.get_laser_scan()
 
             # Reemplazar 'inf' con -1
             scan = self._replace_inf_with_minus_one(scan)
 
-            # Añadir a la cola
-            self.last_scans.append(scan)
+            # Añadir a la lista
+            last_scans.append(scan)
+
+            # Añadir distancia y ángulo al objetivo
+            dist_to_goal = self.calculate_dist_to_goal()
+            angle_to_goal = self.calculate_angle_to_goal()
+            distances.append(dist_to_goal)
+            angles.append(angle_to_goal)
 
         rospy.logdebug("END Get Observation ==>")
 
-        # Distancia
-        dist_to_goal = self.calculate_dist_to_goal()
-        # Ángulo
-        angle_to_goal = self.calculate_angle_to_goal()
 
-        # Para el cálculo de la recompensa
-        # self.last_dist_to_goal = dist_to_goal
-
-        if len(self.last_scans) == 3:
-            return [self.last_scans[0], self.last_scans[1], self.last_scans[2], np.array([dist_to_goal, angle_to_goal])]
+        if len(last_scans) == 3:
+            return [last_scans[0], last_scans[1], last_scans[2],
+                    np.array([distances[0], angles[0]]), np.array([distances[1], angles[1]]), np.array([distances[2], angles[2]])]
         else:
-            rospy.logwarn("Not enough scans in self.last_scans!")
+            rospy.logwarn("Not enough scans in last_scans!")
             return None
     
     #| Revisar si el episodio terminó
@@ -160,8 +163,8 @@ class R2TaskEnv(r2env.R2Env):
     
     #| Calcular recompensa
     def _compute_reward(self, observations, done):
-        current_dist = observations[3][0]
-        current_angle = observations[3][1]
+        current_dist = observations[5][0]
+        current_angle = observations[5][1]
         last_dist_to_goal = self.last_dist_to_goal
         last_angle_to_goal = self.last_angle_to_goal
         self.last_dist_to_goal = current_dist  # Actualiza la última distancia
@@ -185,9 +188,9 @@ class R2TaskEnv(r2env.R2Env):
             else:
                 reward -= 1
             if abs(current_angle) < abs(last_angle_to_goal):
-                reward += 0.5
+                reward += 1
             else:
-                reward -= 0.5
+                reward -= 1
 
         return reward
 

@@ -11,34 +11,40 @@ import collections
 class Net(nn.Module):
     def __init__(self, num_actions):
         super(Net, self).__init__()
+        self.ConvBranch = nn.Sequential(
+            nn.Conv1d(in_channels=3, out_channels=16, kernel_size=9, stride=4),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=16, out_channels=32, kernel_size=5, stride=2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(in_features=33*32 , out_features=100),
+            nn.ReLU()
+        )
+        self.LinearBranch = nn.Sequential(
+            nn.Linear(181, 181),
+            nn.ReLU(),
+            nn.Linear(181, 100),
+            nn.ReLU()
+        )
+        self.joined_layer = nn.Sequential(
+            nn.Linear(400, 256),
+            nn.ReLU(),
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, num_actions)
+        )
         
-        # Capas de convolución 1D
-        self.conv1 = nn.Conv1d(in_channels=3, out_channels=16, kernel_size=5, stride=3)
-        self.conv2 = nn.Conv1d(in_channels=16, out_channels=32, kernel_size=3, stride=2)
-        
-        # Capa densa
-        self.fc1 = nn.Linear(in_features=32*76, out_features=256)  # Ajustar el tamaño de entrada según sea necesario
-        
-        # Capa de salida
-        self.fc2 = nn.Linear(in_features=256, out_features=num_actions)  # Ajustar el tamaño de salida según sea necesario
+    def forward(self, inputLidar, inputOrientation):
+        # Pasar entradas por sus respectivos branches
+        outputLidar = self.ConvBranch(inputLidar)
+        outputOrientation = self.LinearBranch(inputOrientation)
+        outputOrientation = outputOrientation.view(outputOrientation.shape[0], -1) 
 
-    def forward(self, x):
-        # Pasar la entrada a través de las capas de convolución con ReLU como función de activación
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
+        # Pasar por capa densa
+        joined_output = torch.cat((outputLidar, outputOrientation), dim=1)
+        final_output = self.joined_layer(joined_output)
         
-        # Aplanar la salida de las capas de convolución
-        x = x.view(x.size(0), -1)
-        
-        # Pasar la salida aplanada a través de la capa densa con ReLU como función de activación
-        x = F.relu(self.fc1(x))
-        
-        # Pasar la salida de la capa densa a través de la capa de salida
-        # No se aplica ninguna función de activación aquí ya que esto depende de tu problema
-        # Por ejemplo, si estás haciendo una clasificación multiclase, podrías usar una función Softmax aquí
-        x = self.fc2(x)
-        
-        return x
+        return final_output
     
 #| Clases y funciones que servirán al agente en su entrenamiento
 #* Clase Experience replay: Almacena obs, acción, recompensa, fin, siguiente_obs
@@ -76,9 +82,10 @@ class DQN_Agent:
         if np.random.random() < epsilon:
             accion = self.env.action_space.sample()         #! Acción aleatoria según la política epsilon-greedy
         else:                                               #! Acción óptima según la política epsilon-greedy
-            obs_ = adjust_input(self.obs_actual)       
-            obs = torch.from_numpy(obs_).float().unsqueeze(0).to(device)
-            q_vals = net(obs)                                        # Procesar el obs con la red neuronal para
+            obsLidar_, obsOri_ = adjust_input(self.obs_actual)       
+            obsLidar = torch.from_numpy(obsLidar_).float().unsqueeze(0).to(device)
+            obsOri = torch.from_numpy(obsOri_).float().unsqueeze(0).to(device)
+            q_vals = net(obsLidar, obsOri)                              # Procesar el obs con la red neuronal para
                                                                         # obtener los valores Q
             _, acc_ = torch.max(q_vals, dim=1)                          # _ = valor máximo, acc_ = índice de la acción
             accion = int(acc_.item())                                   # Convertir el índice de la acción a un entero
@@ -123,18 +130,18 @@ def adjust_input(obs, max_distance=12.0):
     las1 = normalize_laser_readings(obs[0], max_distance)
     las2 = normalize_laser_readings(obs[1], max_distance)
     las3 = normalize_laser_readings(obs[2], max_distance)
+
     # Convertir ángulo a vector de 181 elementos donde el último indica si es negativo o positivo
     ang1 = encode_orientation(obs[3][1])
     ang2 = encode_orientation(obs[4][1])
     ang3 = encode_orientation(obs[5][1])
 
-    # Concatenar las observaciones para cada canal
-    channel1 = np.concatenate((las1, ang1))
-    channel2 = np.concatenate((las2, ang2))
-    channel3 = np.concatenate((las3, ang3))
+    # Apilar las medidas láser para formar la entrada de la rama convolucional
+    lidar_input = np.stack((las1, las2, las3))
 
-    # Apilar los canales para formar la entrada completa
-    input_array = np.stack((channel1, channel2, channel3))
+    # Apilar las orientaciones para formar la entrada de la rama lineal
+    orientation_input = np.stack((ang1, ang2, ang3))
 
-    return input_array
+    return lidar_input, orientation_input
+
 

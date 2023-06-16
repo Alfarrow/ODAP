@@ -57,7 +57,7 @@ def main():
     total_rewards = []
     numero_frame = 0                # Contador
   
-    rospy.loginfo("------Entrenamiento Comenzado-----")
+    rospy.loginfo("|------|Entrenamiento Comenzado|-----|")
 
     while True:
         #* Agente obtiene experiencia
@@ -78,7 +78,7 @@ def main():
             mean_reward_publisher.publish(Float32(mean_reward))
 
             # Guardar la red cada 10 episodios
-            if len(total_rewards) % 10 == 0:
+            if len(total_rewards) % 20 == 0:
                 rospy.loginfo(f"Guardando el modelo en el episodio {len(total_rewards)}")
                 torch.save(net.state_dict(), f"/home/alfarrow/trained_models/checkpoint_{len(total_rewards)}.pth")
 
@@ -98,18 +98,26 @@ def main():
         #* Convertir batches a tensores para que sean compatibles con la red neuronal y se puedan enviar al GPU
         actions = torch.tensor(actions_).to(device)
         rewards = torch.tensor(rewards_).to(device)
-        dones = torch.tensor(dones_).to(device)
+        dones = torch.tensor(dones_, dtype=torch.bool).to(device)
         # Es ligeramente diferente para las observaciones
-        observations = torch.from_numpy(np.array([adjust_input(obs) for obs in observations_])).float().to(device)
-        new_observations = torch.from_numpy(np.array([adjust_input(new_obs) for new_obs in new_observations_])).float().to(device)
+        observations = [adjust_input(obs) for obs in observations_]
+        new_observations = [adjust_input(new_obs) for new_obs in new_observations_]
+
+        lidar_inputs = torch.from_numpy(np.array([obs[0] for obs in observations])).float().to(device)
+        orientation_inputs = torch.from_numpy(np.array([obs[1] for obs in observations])).float().to(device)
+
+        new_lidar_inputs = torch.from_numpy(np.array([new_obs[0] for new_obs in new_observations])).float().to(device)
+        new_orientation_inputs = torch.from_numpy(np.array([new_obs[1] for new_obs in new_observations])).float().to(device)
+
+
 
         # Calcular los valores Q de la red neuronal principal
-        Q_values = net(observations).gather(1, actions.unsqueeze(-1).long()).squeeze(-1) #! 1. Se procesan los estados
+        Q_values = net(lidar_inputs, orientation_inputs).gather(1, actions.unsqueeze(-1).long()).squeeze(-1) #! 1. Se procesan los estados
                                                                                          #! 2. Gather: Se seleccionan los valores Q de las acciones tomadas anteriormente
                                                                                          #! 3. squeeze(-1): Se elimina la dimensión de tamaño 1
 
         # Calcular los valores Q de la red neuronal target
-        new_obs_values = target_net(new_observations).max(1)[0]
+        new_obs_values = target_net(new_lidar_inputs, new_orientation_inputs).max(1)[0]
         new_obs_values[dones] = 0.0   # Si el episodio ha terminado no se tiene en cuenta el valor del nuevo estado
         new_obs_values = new_obs_values.detach() # No se calculan los gradientes de los valores del nuevo estado debido a que no se van a entrenar
         

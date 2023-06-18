@@ -45,6 +45,11 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = Net(env.action_space.n).to(device)
     target_net = Net(env.action_space.n).to(device)
+    #* Pesos guardados antes
+    checkpoint_weights = torch.load('/home/alfarrow/trained_models/checkpoint_1st.pth')
+    net.load_state_dict(checkpoint_weights)
+    target_net.load_state_dict(checkpoint_weights)
+    print("<Checkpoints Cargados>")
 
     # Iniciar agente y experience replay
     buffer = ExperienceReplay(EXPERIENCE_REPLAY_SIZE)
@@ -81,11 +86,14 @@ def main():
             if len(total_rewards) % 20 == 0:
                 rospy.loginfo(f"Guardando el modelo en el episodio {len(total_rewards)}")
                 torch.save(net.state_dict(), f"/home/alfarrow/trained_models/checkpoint_{len(total_rewards)}.pth")
+                torch.save(target_net.state_dict(), f"/home/alfarrow/trained_models/checkpoint_target_{len(total_rewards)}.pth")
 
             
             
             if mean_reward > MEAN_REWARD_BOUND:             #! Si el promedio de recompensas es mayor que el límite terminar
                 rospy.loginfo(f"RESUELTO en {numero_frame} frames y {len(total_rewards)} sessions")
+                rospy.loginfo(f"Guardando el modelo en el episodio {len(total_rewards)}")
+                torch.save(net.state_dict(), f"/home/alfarrow/trained_models/Final_{len(total_rewards)}.pth")
                 break
 
         #* Entrenamiento

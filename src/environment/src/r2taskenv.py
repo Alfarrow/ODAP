@@ -60,6 +60,7 @@ class R2TaskEnv(r2env.R2Env):
         #* Meta
         self.goal_x = get_param('Training/x_goal')
         self.goal_y = get_param('Training/y_goal')
+        self.threshold_goal = get_param('Training/threshold_goal')
         print("Goal: ", self.goal_x, self.goal_y)
 
         # Variables que se usarán para el cálculo de la recompensa
@@ -147,6 +148,10 @@ class R2TaskEnv(r2env.R2Env):
             distances.append(dist_to_goal)
             angles.append(angle_to_goal)
 
+        # Revisar si se llegó al objetivo
+        if distances[2] <= self.threshold_goal:
+            self._episode_done = True
+
         rospy.logdebug("END Get Observation ==>")
 
 
@@ -159,6 +164,7 @@ class R2TaskEnv(r2env.R2Env):
     
     #| Revisar si el episodio terminó
     def _is_done(self, *args):
+        
         return self._episode_done
     
     #| Calcular recompensa
@@ -174,23 +180,26 @@ class R2TaskEnv(r2env.R2Env):
 
         if done:
             if self.collision:  # Si hubo una colisión
-                reward = -20
+                reward = -40
             elif self.max_steps_reached:  # Si se alcanzó el número máximo de pasos
                 reward = -20
-            elif current_dist <= 0.1:  # Si se está a 10 cm o menos de la meta
-                reward = 20
+            elif current_dist <= self.threshold_goal:  # Si se está a 10 cm o menos de la meta
+                reward = 40
+                print("Meta Alcanzada: +20")
             else:
                 reward = 0  # Este caso no debería suceder, pero se deja por seguridad
         else:
-            # Si la distancia al objetivo es menor que antes, se da una recompensa pequeña, si no, una recompensa negativa pequeña.
-            if current_dist < last_dist_to_goal:
-                reward += 1
-            else:
-                reward -= 1
-            if abs(current_angle) < abs(last_angle_to_goal):
-                reward += 1
-            else:
-                reward -= 1
+            # Penalización continua por la distancia al objetivo
+            reward -= current_dist / 100.0
+
+            # Penalización continua por el ángulo respecto al objetivo
+            reward -= abs(current_angle) / np.pi
+
+            # Recompensa mayor a medida que el agente se acerca más al objetivo
+            reward += (last_dist_to_goal - current_dist) * 10
+
+            # Recompensa cada vez que el agente se orienta mejor hacia el objetivo
+            reward += (abs(last_angle_to_goal) - abs(current_angle)) * 10
 
         return reward
 

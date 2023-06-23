@@ -46,10 +46,13 @@ def main():
     net = Net(env.action_space.n).to(device)
     target_net = Net(env.action_space.n).to(device)
     #* Pesos guardados antes
-    checkpoint_weights = torch.load('/home/alfarrow/trained_models/checkpoint_1st.pth')
-    net.load_state_dict(checkpoint_weights)
-    target_net.load_state_dict(checkpoint_weights)
-    print("<Checkpoints Cargados>")
+    checkpoint_net = torch.load('/home/alfarrow/trained_models/2nd_walls/checkpoint_300.pth')
+    net.load_state_dict(checkpoint_net)
+    print("<Checkpoints Net Cargados>")
+
+    checkpoint_target = torch.load('/home/alfarrow/trained_models/2nd_walls/checkpoint_300.pth')
+    target_net.load_state_dict(checkpoint_target)
+    print("<Checkpoints Target Cargados>")
 
     # Iniciar agente y experience replay
     buffer = ExperienceReplay(EXPERIENCE_REPLAY_SIZE)

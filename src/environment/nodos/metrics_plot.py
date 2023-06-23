@@ -37,6 +37,9 @@ def main():
                 ax.scatter(range(len(rewards)), rewards)
                 ax.scatter(range(len(mean_rewards)), mean_rewards)
                 ax.legend()
+                ax.set_title('Reward and Mean Reward Over Time')  # title of the plot
+                ax.set_xlabel('Episode')  # x-axis label
+                ax.set_ylabel('Reward Value')  # y-axis label
                 plt.pause(0.01)
 
             rospy.sleep(0.1)

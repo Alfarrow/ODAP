@@ -6,20 +6,20 @@ Training:
   num_lidar_measurements: 281
 # Task config
   x_goal: 2.5
-  y_goal: 0.0
+  y_goal: -2.5
   threshold_goal: 0.2
-  timestep_limit_per_episode: 300
+  timestep_limit_per_episode: 1500
 # Condiciones para calificar el aprendizaje del agente
-  mean_reward_bound: 4000
+  mean_reward_bound: 500
   number_of_rewards_to_average: 10
 # Hiperparámetros de entrenamiento
   gamma: 0.9
   batch_size: 64
-  learning_rate: 0.001
+  learning_rate: 0.0001
   eps_start: 1.0
-  eps_decay: 0.999985
+  eps_decay: 0.998
   eps_min: 0.02
   exp_replay_size: 40000
-  sync_target_network: 1000
+  sync_target_network: 2000
   #x: -9.0, y: 9.0
   # 8000 para considerar que aprendió

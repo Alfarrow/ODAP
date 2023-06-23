@@ -108,6 +108,8 @@ class R2TaskEnv(r2env.R2Env):
         self.cumulated_steps = 0.0
         # Set to false Done, because its calculated asyncronously
         self._episode_done = False
+        # Establecer velocidad en 0's
+        self.action_pub.publish(7)
 
         self.last_dist_to_goal = self.calculate_dist_to_goal()
         self.last_angle_to_goal = self.calculate_angle_to_goal()
@@ -180,28 +182,31 @@ class R2TaskEnv(r2env.R2Env):
 
         if done:
             if self.collision:  # Si hubo una colisión
-                reward = -40
+                reward -= 20
             elif self.max_steps_reached:  # Si se alcanzó el número máximo de pasos
-                reward = -20
+                reward -= 20
             elif current_dist <= self.threshold_goal:  # Si se está a 10 cm o menos de la meta
-                reward = 40
-                print("Meta Alcanzada: +20")
+                reward += 20
+                print("Meta Alcanzada: +50")
             else:
                 reward = 0  # Este caso no debería suceder, pero se deja por seguridad
+                print("Sí sucedió")
         else:
-            # Penalización continua por la distancia al objetivo
-            reward -= current_dist / 100.0
+            # # Penalización continua por la distancia al objetivo
+            # reward -= current_dist / 100.0
 
-            # Penalización continua por el ángulo respecto al objetivo
-            reward -= abs(current_angle) / np.pi
+            # # Penalización continua por el ángulo respecto al objetivo
+            # reward -= abs(current_angle) / np.pi
+
 
             # Recompensa mayor a medida que el agente se acerca más al objetivo
-            reward += (last_dist_to_goal - current_dist) * 10
+            reward += (last_dist_to_goal - current_dist) * 100
 
             # Recompensa cada vez que el agente se orienta mejor hacia el objetivo
-            reward += (abs(last_angle_to_goal) - abs(current_angle)) * 10
+            reward += (abs(last_angle_to_goal) - abs(current_angle)) * 100
 
         return reward
+
 
     
 #! Funciones Extra
@@ -258,6 +263,9 @@ class R2TaskEnv(r2env.R2Env):
 
         # Ángulo relativo al objetivo
         relative_angle_to_goal = global_angle_to_goal - robot_orientation
+
+        # Normaliza el ángulo relativo al objetivo para asegurarte de que siempre esté en el rango [-pi, pi]
+        relative_angle_to_goal = (relative_angle_to_goal + np.pi) % (2 * np.pi) - np.pi
 
         return relative_angle_to_goal
     

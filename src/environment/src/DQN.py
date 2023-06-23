@@ -92,6 +92,9 @@ class DQN_Agent:
             
         nuevo_obs, recompensa, is_done, info = self.env.step(accion)          #! Ejecutar la acción en el entorno
         self.recompensa_total += recompensa
+        # print(nuevo_obs[5])
+        # print(recompensa)
+        # print("Total: ", self.recompensa_total)
         
         exp = Experience(self.obs_actual, accion, recompensa, is_done, nuevo_obs) # Almacenar la experiencia en una tupla
         self.exp_replay.append(exp)                           #! Añadir la tupla al buffer ExperienceReplay

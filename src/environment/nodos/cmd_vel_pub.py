@@ -10,7 +10,7 @@ class VelocityPublisherNode:
         self.vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
         self.action_sub = rospy.Subscriber('/action', Int32, self.action_callback)
         self.vel_cmd = Twist()
-        self.actions = [(1.0, 0.0), (1.0, 0.8), (1.0, -0.8), (-1.0, 0.0), (-1.0, -0.8), (-1.0, 0.8), (0, 0)]
+        self.actions = [(0.8, 0.0), (0.8, 0.6), (0.8, -0.6), (1.0, 0.0), (0.5, 0.0), (0.5, 0.4), (0.5, -0.4), (0.0, 0.0)]
 
     def action_callback(self, msg):
         try:
@@ -27,7 +27,10 @@ class VelocityPublisherNode:
                 self.vel_pub.publish(self.vel_cmd)
                 rate.sleep()
             except ROSTimeMovedBackwardsException:
-                rospy.logwarn("ROS Time moved backwards. Possibly the Gazebo simulation was reset. Continuing the loop...")
+                rospy.logwarn("ROS Time moved backwards. Continuing the loop...")
+                linear_vel, angular_vel = self.actions[-1]  # Set to the last speed in the list
+                self.vel_cmd.linear.x = linear_vel
+                self.vel_cmd.angular.z = angular_vel
                 continue
 
 if __name__ == '__main__':

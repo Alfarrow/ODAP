@@ -16,8 +16,8 @@ def main(stdscr):
     twist = Twist()
 
     # Mapeo de teclas a velocidades lineales y angulares
-    key_mapping = {'a': (0.5, 0.0), 's': (0.5, 0.4), 'd': (0.5, -0.4), 'f': (0.0, 0.0),
-                   'z': (-0.5, 0.0), 'x': (-0.5, -0.4), 'c': (-0.5, 0.4)}
+    key_mapping = {'a': (0.8, 0.0), 's': (0.8, 0.6), 'd': (0.6, -0.8), 'f': (1.0, 0.0),
+                   'z': (0.5, 0.0), 'x': (0.5, 0.4), 'c': (0.5, -0.4)}
 
     while not rospy.is_shutdown():
         c = stdscr.getch()

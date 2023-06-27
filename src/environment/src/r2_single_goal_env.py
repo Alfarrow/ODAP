@@ -17,8 +17,8 @@ from gazebo_msgs.srv import GetModelState, GetModelStateRequest, SetModelState
 from tf.transformations import euler_from_quaternion
 
 register(
-        id='R2Env-v1',
-        entry_point='r2taskenv:R2TaskEnv',
+        id='R2Env-v0',
+        entry_point='r2_single_goal_env:R2TaskEnv',
         max_episode_steps=get_param('Training/timestep_limit_per_episode')
     )
 

@@ -47,11 +47,11 @@ def main():
     net = Net(env.action_space.n).to(device)
     target_net = Net(env.action_space.n).to(device)
     #* Pesos guardados antes
-    checkpoint_net = torch.load('/home/alfarrow/trained_models/2nd_walls/Final_619.pth')
+    checkpoint_net = torch.load('/home/alfarrow/trained_models/2nd_walls/checkpoint_460.pth')
     net.load_state_dict(checkpoint_net)
     print("<Checkpoints Net Cargados>")
 
-    checkpoint_target = torch.load('/home/alfarrow/trained_models/2nd_walls/Final_619.pth')
+    checkpoint_target = torch.load('/home/alfarrow/trained_models/2nd_walls/checkpoint_460.pth')
     target_net.load_state_dict(checkpoint_target)
     print("<Checkpoints Target Cargados>")
 

@@ -193,6 +193,12 @@ class R2TaskEnv(r2env.R2Env):
         reward = 0
 
         if done:
+            # Recompensa mayor a medida que el agente se acerca más al objetivo
+            reward += (last_dist_to_goal - current_dist) * 100
+
+            # Recompensa cada vez que el agente se orienta mejor hacia el objetivo
+            reward += (abs(last_angle_to_goal) - abs(current_angle)) * 100
+
             if self.collision:  # Si hubo una colisión
                 reward -= 20
             elif self.max_steps_reached:  # Si se alcanzó el número máximo de pasos
@@ -204,7 +210,7 @@ class R2TaskEnv(r2env.R2Env):
                 else:
                     pass
             else:
-                reward = 0  # Este caso no debería suceder, pero se deja por seguridad
+                reward += 0  # Este caso no debería suceder, pero se deja por seguridad
                 print("Sí sucedió")
         else:
             # Recompensa mayor a medida que el agente se acerca más al objetivo

@@ -1,6 +1,6 @@
 <launch>
     <arg name="namespace" default="/"/>
-    <arg name="world" default="$(find odap)/src/r2_gazebo/worlds/little_room.world"/>
+    <!-- <arg name="world" default="$(find odap)/src/r2_gazebo/worlds/little_room.world"/> -->
 
 
     <!--Pose del Vehículo-->
@@ -22,7 +22,7 @@
     <group ns="$(arg namespace)">
         <!-- Crear mundo -->
         <include file="$(find gazebo_ros)/launch/empty_world.launch">
-            <arg name="world_name" value="$(arg world)"/>
+            <!-- <arg name="world_name" value="$(arg world)"/> -->
         </include>
 
         <!--Cargar el vehículo-->

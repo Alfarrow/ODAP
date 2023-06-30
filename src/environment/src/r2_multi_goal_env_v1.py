@@ -6,23 +6,22 @@ import numpy as np
 from rospy import get_param
 from geometry_msgs.msg import Twist
 
-import r2env
+import r2env_v1
 from gym import spaces
 from gym.envs.registration import register
 
 from gazebo_msgs.msg import ModelState
 from gazebo_msgs.srv import GetModelState, GetModelStateRequest, SetModelState
 
-from tf.transformations import euler_from_quaternion
 
 
 register(
         id='R2Env-v1',
-        entry_point='r2_multi_goal_env:R2TaskEnv',
+        entry_point='r2_multi_goal_env_v1:R2TaskEnv',
         max_episode_steps=get_param('Training/timestep_limit_per_episode')
     )
 
-class R2TaskEnv(r2env.R2Env):
+class R2TaskEnv(r2env_v1.R2Env):
     #| Función de Inicio
     def __init__(self):
 
@@ -35,9 +34,9 @@ class R2TaskEnv(r2env.R2Env):
         # Definir espacio de observación
         min_distance = get_param('Training/min_distance')
         max_distance = get_param('Training/max_distance')
-        num_lidar_measurements = get_param('Training/num_lidar_measurements')
-        low = np.full((num_lidar_measurements,), min_distance)
-        high = np.full((num_lidar_measurements,), max_distance)
+        self.num_lidar_measurements = get_param('Training/num_lidar_measurements')
+        low = np.full((self.num_lidar_measurements,), min_distance)
+        high = np.full((self.num_lidar_measurements,), max_distance)
         laser_box = spaces.Box(low, high, dtype=np.float32)
         self.observation_space = spaces.Tuple([
             laser_box,
@@ -63,11 +62,13 @@ class R2TaskEnv(r2env.R2Env):
         self.goal_x = self.goals_axis_x[self.goal_index]
         self.goal_y = self.goals_axis_y[self.goal_index]
         self.threshold_goal = get_param('Training/threshold_goal')
+        print("HOLI")
         print("Primer Objetivo: ", self.goal_x, self.goal_y)
 
         # Variables que se usarán para el cálculo de la recompensa
         self.last_dist_to_goal = self.calculate_dist_to_goal()
         self.last_angle_to_goal = self.calculate_angle_to_goal()
+
 
         super(R2TaskEnv, self).__init__()
 
@@ -106,6 +107,10 @@ class R2TaskEnv(r2env.R2Env):
         of an episode.
         :return:
         """
+        # Vaciar los buffers
+        self.laser_scan_buffer.clear()
+        self.distance_buffer.clear()
+        self.orientation_buffer.clear()
         # For Info Purposes
         self.cumulated_steps = 0.0
         # Set to false Done, because its calculated asyncronously
@@ -121,6 +126,13 @@ class R2TaskEnv(r2env.R2Env):
         self.last_angle_to_goal = self.calculate_angle_to_goal()
         self.collision = False
 
+        # Valores por defecto para los bufferes
+        default_value_laser_scan = np.full((self.num_lidar_measurements,), -1.0) # reemplazar num_lidar_measurements con la dimensión de tus datos láser
+        self.laser_scan_buffer.append(default_value_laser_scan.tolist())  # Asegúrate de convertir la matriz numpy a lista con .tolist()
+
+        self.distance_buffer.append(self.last_dist_to_goal)
+        self.orientation_buffer.append(self.last_angle_to_goal)
+
     #| Publica las velocidades según la acción elegida
     def _set_action(self, action):
         self.cumulated_steps += 1  # Incrementa el número de pasos realizados
@@ -134,30 +146,22 @@ class R2TaskEnv(r2env.R2Env):
         rospy.logdebug("Start Get Observation ==>")
 
         # Lista para almacenar los últimos escaneos láser
-        last_scans = []
-        # Lista para distancias y ángulos al objetivo
-        distances = []
-        angles = []
+        last_scans = list(self.laser_scan_buffer)
+        distances = list(self.distance_buffer)
+        angles = list(self.orientation_buffer)
 
-        # Repetir si no se tienen todos los escaneos que se requieren
-        while len(last_scans) < 3:
-            # We get the laser scan data
-            scan = self.get_laser_scan()
+        # Verificar y llenar los buffers si es necesario (esto sólo se hace la primera vez creo)
+        if len(last_scans) < self.laser_scan_buffer.maxlen:
+            last_scans += [last_scans[-1]] * (self.laser_scan_buffer.maxlen - len(last_scans))
+        
+        if len(distances) < self.distance_buffer.maxlen:
+            distances += [distances[-1]] * (self.distance_buffer.maxlen - len(distances))
 
-            # Reemplazar 'inf' con -1
-            scan = self._replace_inf_with_minus_one(scan)
-
-            # Añadir a la lista
-            last_scans.append(scan)
-
-            # Añadir distancia y ángulo al objetivo
-            dist_to_goal = self.calculate_dist_to_goal()
-            angle_to_goal = self.calculate_angle_to_goal()
-            distances.append(dist_to_goal)
-            angles.append(angle_to_goal)
+        if len(angles) < self.orientation_buffer.maxlen:
+            angles += [angles[-1]] * (self.orientation_buffer.maxlen - len(angles))
 
         # Revisar si se llegó al objetivo
-        if distances[2] <= self.threshold_goal:
+        if distances[-1] <= self.threshold_goal:
             self.goal_index += 1
             if self.goal_index >= len(self.goals_axis_x):  # Si se alcanzó el último objetivo
                 self._episode_done = True
@@ -168,17 +172,12 @@ class R2TaskEnv(r2env.R2Env):
 
         rospy.logdebug("END Get Observation ==>")
 
-
-        if len(last_scans) == 3:
-            return [last_scans[0], last_scans[1], last_scans[2],
-                    np.array([distances[0], angles[0]]), np.array([distances[1], angles[1]]), np.array([distances[2], angles[2]])]
-        else:
-            rospy.logwarn("Not enough scans in last_scans!")
-            return None
-    
+        return [last_scans[0], last_scans[1], last_scans[2],
+                np.array([distances[0], angles[0]]), np.array([distances[1], angles[1]]), np.array([distances[2], angles[2]])]
+   
     #| Revisar si el episodio terminó
     def _is_done(self, *args):
-        
+        #!!!!!!!!!DE ALGUNA MANERA VACIAR BUFERES!!!!!!!!!!!!!!!!!!!!!!
         return self._episode_done
     
     #| Calcular recompensa
@@ -201,12 +200,12 @@ class R2TaskEnv(r2env.R2Env):
 
             if self.collision:  # Si hubo una colisión
                 reward -= 20
-            elif self.max_steps_reached:  # Si se alcanzó el número máximo de pasos
-                reward -= 20
+            # elif self.max_steps_reached:  # Si se alcanzó el número máximo de pasos
+            #     reward -= 20
             elif current_dist <= self.threshold_goal:  # Si se está a 10 cm o menos de la meta
                 if self.goal_index >= len(self.goals_axis_x):  # Si es el último objetivo
                     reward += 20
-                    print("Meta Final Alcanzada: +50")
+                    print("Meta Final Alcanzada: +20")
                 else:
                     pass
             else:
@@ -231,64 +230,5 @@ class R2TaskEnv(r2env.R2Env):
 
 
     
-#! Funciones Extra
-    # Reemplazar inf con -1
-    def _replace_inf_with_minus_one(self, laser_scan):
-        # Convert the laser scan data into a NumPy array
-        laser_scan_np = np.array(laser_scan.ranges)
-        # Replace 'inf' values with -1
-        laser_scan_np[np.isinf(laser_scan_np)] = -1
-        # Convert the NumPy array back into a list and return
-        return laser_scan_np.tolist()
-    
-    # Obtener posición del robot
-    def get_robot_pose(self):
-        model_state_client = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-        try:
-            response = model_state_client(self.robot_name, 'world')
-            return response.pose.position
-        except rospy.ServiceException as e:
-            rospy.logerr("Service call failed: %s" % e)
-            return None
-
-    # Obtener orientación del robot
-    def get_robot_orientation(self):
-        model_state_client = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-        try:
-            response = model_state_client(self.robot_name, 'world')
-            orientation_q = response.pose.orientation
-            orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
-            (_, _, yaw) = euler_from_quaternion(orientation_list)
-            return yaw
-        except rospy.ServiceException as e:
-            rospy.logerr("Service call failed: %s" % e)
-            return None
-
-    # Calcular distancia al objetivo
-    def calculate_dist_to_goal(self):
-        robot_pose = self.get_robot_pose()
-
-        # Distancia
-        dist_to_goal = np.sqrt((self.goal_x - robot_pose.x)**2 + (self.goal_y - robot_pose.y)**2)
-
-        return dist_to_goal
-       
-    # Calcular ángulo al objetivo
-    def calculate_angle_to_goal(self):
-        robot_pose = self.get_robot_pose()
-
-        # Ángulo global al objetivo
-        global_angle_to_goal = np.arctan2(self.goal_y - robot_pose.y, self.goal_x - robot_pose.x)
-
-        # Orientación del robot
-        robot_orientation = self.get_robot_orientation()
-
-        # Ángulo relativo al objetivo
-        relative_angle_to_goal = global_angle_to_goal - robot_orientation
-
-        # Normaliza el ángulo relativo al objetivo para asegurarte de que siempre esté en el rango [-pi, pi]
-        relative_angle_to_goal = (relative_angle_to_goal + np.pi) % (2 * np.pi) - np.pi
-
-        return relative_angle_to_goal
-    
+  
 

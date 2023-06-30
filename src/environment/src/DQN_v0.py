@@ -38,7 +38,7 @@ class Net(nn.Module):
         # Pasar entradas por sus respectivos branches
         outputLidar = self.ConvBranch(inputLidar)
         outputOrientation = self.LinearBranch(inputOrientation)
-        outputOrientation = outputOrientation.view(outputOrientation.shape[0], -1) 
+        outputOrientation = outputOrientation.view(outputOrientation.shape[0], -1)
 
         # Pasar por capa densa
         joined_output = torch.cat((outputLidar, outputOrientation), dim=1)
@@ -92,7 +92,7 @@ class DQN_Agent:
             
         nuevo_obs, recompensa, is_done, info = self.env.step(accion)          #! Ejecutar la acción en el entorno
         self.recompensa_total += recompensa
-        # print(nuevo_obs[5])
+        # print(nuevo_obs[0:3])
         # print(recompensa)
         # print("Total: ", self.recompensa_total)
         

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import numpy as np
+from collections import deque
 import rospy
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Bool
@@ -8,6 +10,8 @@ from geometry_msgs.msg import Twist
 from gazebo_msgs.msg import ModelState, ContactsState
 from gazebo_msgs.srv import GetModelState, GetModelStateRequest, SetModelState
 from openai_ros import robot_gazebo_env
+
+from tf.transformations import euler_from_quaternion
 
 
 class R2Env(robot_gazebo_env.RobotGazeboEnv):
@@ -39,6 +43,11 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
         # Variable para detectar si se está en colisión
         self.collision = False
 
+        # Inicializar buffers
+        self.laser_scan_buffer = deque(maxlen=3)
+        self.distance_buffer = deque(maxlen=3)
+        self.orientation_buffer = deque(maxlen=3)
+
         # Revisar que todo esté listo
         self._check_all_systems_ready()
 
@@ -55,6 +64,14 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
     #| Callback del LiDAR
     def _laser_scan_callback(self, data):
         self.laser_scan = data
+        laser_scan_processed = self._replace_inf_with_minus_one(data)
+        self.laser_scan_buffer.append(laser_scan_processed)
+
+        # Agregar distancia y orientación a sus respectivos bufferes
+        distance_to_goal = self.calculate_dist_to_goal()
+        orientation_to_goal = self.calculate_angle_to_goal()
+        self.distance_buffer.append(distance_to_goal)
+        self.orientation_buffer.append(orientation_to_goal)
 
     #| Función para obtener los datos guardados del lidar
     def get_laser_scan(self):
@@ -101,7 +118,65 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
         raise NotImplementedError()
 
 
+#! Funciones que permitirán obtener datos para la observación
+    # Reemplazar inf con -1
+    def _replace_inf_with_minus_one(self, laser_scan):
+        # Convert the laser scan data into a NumPy array
+        laser_scan_np = np.array(laser_scan.ranges)
+        # Replace 'inf' values with -1
+        laser_scan_np[np.isinf(laser_scan_np)] = -1
+        # Convert the NumPy array back into a list and return
+        return laser_scan_np.tolist()
+    
+    # Obtener posición del robot
+    def get_robot_pose(self):
+        model_state_client = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+        try:
+            response = model_state_client(self.robot_name, 'world')
+            return response.pose.position
+        except rospy.ServiceException as e:
+            rospy.logerr("Service call failed: %s" % e)
+            return None
 
+    # Obtener orientación del robot
+    def get_robot_orientation(self):
+        model_state_client = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+        try:
+            response = model_state_client(self.robot_name, 'world')
+            orientation_q = response.pose.orientation
+            orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+            (_, _, yaw) = euler_from_quaternion(orientation_list)
+            return yaw
+        except rospy.ServiceException as e:
+            rospy.logerr("Service call failed: %s" % e)
+            return None
+
+    # Calcular distancia al objetivo
+    def calculate_dist_to_goal(self):
+        robot_pose = self.get_robot_pose()
+
+        # Distancia
+        dist_to_goal = np.sqrt((self.goal_x - robot_pose.x)**2 + (self.goal_y - robot_pose.y)**2)
+
+        return dist_to_goal
+       
+    # Calcular ángulo al objetivo
+    def calculate_angle_to_goal(self):
+        robot_pose = self.get_robot_pose()
+
+        # Ángulo global al objetivo
+        global_angle_to_goal = np.arctan2(self.goal_y - robot_pose.y, self.goal_x - robot_pose.x)
+
+        # Orientación del robot
+        robot_orientation = self.get_robot_orientation()
+
+        # Ángulo relativo al objetivo
+        relative_angle_to_goal = global_angle_to_goal - robot_orientation
+
+        # Normaliza el ángulo relativo al objetivo para asegurarte de que siempre esté en el rango [-pi, pi]
+        relative_angle_to_goal = (relative_angle_to_goal + np.pi) % (2 * np.pi) - np.pi
+
+        return relative_angle_to_goal
 
 #! Funciones Extra
     # Revisar disponibilidad de LiDAR

@@ -7,11 +7,10 @@ from std_msgs.msg import Float32
 import torch
 import torch.nn as nn
 from torch import optim
-# import r2_single_goal_env
-import r2_multi_goal_env
+import r2_multi_goal_env_v1
 import numpy as np
-from DQN import Net, DQN_Agent, ExperienceReplay
-from DQN import encode_orientation, normalize_laser_readings, adjust_input
+from DQN_v0 import Net, DQN_Agent, ExperienceReplay
+from DQN_v0 import encode_orientation, normalize_laser_readings, adjust_input
 
 
 def main():
@@ -47,13 +46,13 @@ def main():
     net = Net(env.action_space.n).to(device)
     target_net = Net(env.action_space.n).to(device)
     #* Pesos guardados antes
-    checkpoint_net = torch.load('/home/alfarrow/trained_models/2nd_walls/checkpoint_460.pth')
-    net.load_state_dict(checkpoint_net)
-    print("<Checkpoints Net Cargados>")
+    # checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_573.pth')
+    # net.load_state_dict(checkpoint_net)
+    # print("<Checkpoints Net Cargados>")
 
-    checkpoint_target = torch.load('/home/alfarrow/trained_models/2nd_walls/checkpoint_460.pth')
-    target_net.load_state_dict(checkpoint_target)
-    print("<Checkpoints Target Cargados>")
+    # checkpoint_target = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_573.pth')
+    # target_net.load_state_dict(checkpoint_target)
+    # print("<Checkpoints Target Cargados>")
 
     # Iniciar agente y experience replay
     buffer = ExperienceReplay(EXPERIENCE_REPLAY_SIZE)

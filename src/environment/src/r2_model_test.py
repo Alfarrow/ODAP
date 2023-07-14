@@ -4,7 +4,7 @@ import gym
 import rospy
 from std_msgs.msg import Float32
 import torch
-import r2_multi_goal_env_v0
+import r2_multi_goal_env_v1
 from DQN_v0 import Net, DQN_Agent
 from DQN_v0 import adjust_input
 
@@ -18,7 +18,9 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = Net(env.action_space.n).to(device)
     #* Pesos guardados antes
-    checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_Orientation.pth')
+    # checkpoint_net = torch.load('/home/alfarrow/trained_models/Final_868.pth')
+    checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_3_room_freeze.pth')
+
     net.load_state_dict(checkpoint_net)
     print("<Checkpoints Net Cargados>")
 

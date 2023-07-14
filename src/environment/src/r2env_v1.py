@@ -3,7 +3,7 @@
 import numpy as np
 from collections import deque
 import rospy
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan, Imu
 from std_msgs.msg import Bool
 from std_msgs.msg import Int32
 from geometry_msgs.msg import Twist
@@ -39,6 +39,10 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
         # Crear suscriptores
         rospy.Subscriber("/R2/scan", LaserScan, self._laser_scan_callback)
         rospy.Subscriber("/R2/bumper", ContactsState, self._bumper_callback)
+        rospy.Subscriber("/R2/imu", Imu, self._imu_callback)
+        self.velocity_subscriber = rospy.Subscriber("/cmd_vel", Twist, self.velocity_callback)
+        self.latest_linear_velocity = 0
+        self.latest_angular_velocity = 0
 
         # Variable para detectar si se está en colisión
         self.collision = False
@@ -55,6 +59,7 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
     #| Revisar que todos los sistemas estén listos (sensores, publicadores, ...)
     def _check_all_systems_ready(self):
         self._check_laser_scan_ready()
+        self._check_imu_ready()
         self._check_bumper_ready()
         self._check_odom_ready()
         self._check_publishers_connection()
@@ -69,13 +74,17 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
 
         # Agregar distancia y orientación a sus respectivos bufferes
         distance_to_goal = self.calculate_dist_to_goal()
-        orientation_to_goal = self.calculate_angle_to_goal()
+        orientation_to_goal = self.calculate_angle_to_goal_imu()
         self.distance_buffer.append(distance_to_goal)
         self.orientation_buffer.append(orientation_to_goal)
 
     #| Función para obtener los datos guardados del lidar
     def get_laser_scan(self):
         return self.laser_scan
+    
+    #| Callback del sensor IMU
+    def _imu_callback(self, data):
+        self.imu_data = data
     
     #| Callback de Bumper
     def _bumper_callback(self, contact_data):
@@ -85,6 +94,12 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
         if contact_data.states:  # If the bumper sensor returns a non-empty list, the robot hit something
             self._episode_done = True
             self.collision = True
+
+    #| Callback Velocidad
+    # Función callback para el suscriptor de velocidad
+    def velocity_callback(self, data):
+        self.latest_linear_velocity = data.linear.x
+        self.latest_angular_velocity = data.angular.z
             
     
 #! Funciones vacías que se configurarán de preferencia en el Task Environment
@@ -177,6 +192,26 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
         relative_angle_to_goal = (relative_angle_to_goal + np.pi) % (2 * np.pi) - np.pi
 
         return relative_angle_to_goal
+    
+    # Calcular ángulo al objetivo usando IMU
+    def calculate_angle_to_goal_imu(self):
+        robot_pose = self.get_robot_pose()
+
+        # Obtener orientación del robot a partir de los datos del IMU
+        orientation_q = self.imu_data.orientation
+        orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+        (_, _, yaw) = euler_from_quaternion(orientation_list)
+
+        # Ángulo global al objetivo
+        global_angle_to_goal = np.arctan2(self.goal_y - robot_pose.y, self.goal_x - robot_pose.x)
+
+        # Ángulo relativo al objetivo
+        relative_angle_to_goal = global_angle_to_goal - yaw
+
+        # Normaliza el ángulo relativo al objetivo para asegurarte de que siempre esté en el rango [-pi, pi]
+        relative_angle_to_goal = (relative_angle_to_goal + np.pi) % (2 * np.pi) - np.pi
+
+        return relative_angle_to_goal
 
 #! Funciones Extra
     # Revisar disponibilidad de LiDAR
@@ -191,6 +226,17 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
             except:
                 rospy.logerr("Current /R2/scan not ready yet, retrying for getting laser_scan")
         return self.laser_scan
+
+    # Revisar disponibilidad del sensor IMU 
+    def _check_imu_ready(self):
+        self.imu_data = None
+        while self.imu_data is None and not rospy.is_shutdown():
+            try:
+                self.imu_data = rospy.wait_for_message("/R2/imu", Imu, timeout=1.0)
+                rospy.logdebug("Current /R2/imu READY=>")
+            except:
+                rospy.logerr("Current /R2/imu not ready yet, retrying for getting imu")
+        return self.imu_data
     
     # Revisar sensor Bumper
     def _check_bumper_ready(self):

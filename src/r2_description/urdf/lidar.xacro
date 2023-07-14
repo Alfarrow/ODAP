@@ -46,7 +46,7 @@
             <always_on>true</always_on>
             <pose>0 0 ${laz_height/4} 0 0 0</pose>
             <visualize>false</visualize>
-            <update_rate>10</update_rate>
+            <update_rate>6.0</update_rate>
 
             <ray>
                 <scan>

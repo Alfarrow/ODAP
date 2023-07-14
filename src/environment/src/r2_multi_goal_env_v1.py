@@ -62,7 +62,6 @@ class R2TaskEnv(r2env_v1.R2Env):
         self.goal_x = self.goals_axis_x[self.goal_index]
         self.goal_y = self.goals_axis_y[self.goal_index]
         self.threshold_goal = get_param('Training/threshold_goal')
-        print("HOLI")
         print("Primer Objetivo: ", self.goal_x, self.goal_y)
 
         # Variables que se usarán para el cálculo de la recompensa
@@ -143,8 +142,6 @@ class R2TaskEnv(r2env_v1.R2Env):
 
     #| Obtener observación
     def _get_obs(self):
-        rospy.logdebug("Start Get Observation ==>")
-
         # Lista para almacenar los últimos escaneos láser
         last_scans = list(self.laser_scan_buffer)
         distances = list(self.distance_buffer)
@@ -160,8 +157,17 @@ class R2TaskEnv(r2env_v1.R2Env):
         if len(angles) < self.orientation_buffer.maxlen:
             angles += [angles[-1]] * (self.orientation_buffer.maxlen - len(angles))
 
+
+        return [last_scans[0], last_scans[1], last_scans[2],
+                np.array([distances[0], angles[0]]), np.array([distances[1], angles[1]]), np.array([distances[2], angles[2]])]
+   
+    #| Revisar si el episodio terminó
+    def _is_done(self, *args):
+        distance_to_goal = self.calculate_dist_to_goal()
+
         # Revisar si se llegó al objetivo
-        if distances[-1] <= self.threshold_goal:
+        # if distances[-1] <= self.threshold_goal: # Al igual que en las recompensas esto no corresponde a la realidad
+        if distance_to_goal <= self.threshold_goal:
             self.goal_index += 1
             if self.goal_index >= len(self.goals_axis_x):  # Si se alcanzó el último objetivo
                 self._episode_done = True
@@ -170,20 +176,13 @@ class R2TaskEnv(r2env_v1.R2Env):
                 self.goal_y = self.goals_axis_y[self.goal_index]
                 print("Nuevo objetivo: ", self.goal_x, self.goal_y)
 
-        rospy.logdebug("END Get Observation ==>")
-
-        return [last_scans[0], last_scans[1], last_scans[2],
-                np.array([distances[0], angles[0]]), np.array([distances[1], angles[1]]), np.array([distances[2], angles[2]])]
-   
-    #| Revisar si el episodio terminó
-    def _is_done(self, *args):
-        #!!!!!!!!!DE ALGUNA MANERA VACIAR BUFERES!!!!!!!!!!!!!!!!!!!!!!
         return self._episode_done
     
     #| Calcular recompensa
     def _compute_reward(self, observations, done):
-        current_dist = observations[5][0]
-        current_angle = observations[5][1]
+        # Obtenerlo de la realidad
+        current_dist = self.calculate_dist_to_goal()
+        current_angle = self.calculate_angle_to_goal()
         last_dist_to_goal = self.last_dist_to_goal
         last_angle_to_goal = self.last_angle_to_goal
         self.last_dist_to_goal = current_dist  # Actualiza la última distancia
@@ -191,17 +190,22 @@ class R2TaskEnv(r2env_v1.R2Env):
 
         reward = 0
 
-        if done:
-            # Recompensa mayor a medida que el agente se acerca más al objetivo
-            reward += (last_dist_to_goal - current_dist) * 100
+        # Recompensa o castigo por doblar o no
+        if self.latest_linear_velocity != 0 and self.latest_angular_velocity == 0:
+            reward += 0.005  # Recompensa si hay velocidad lineal pero no angular
 
+        if self.latest_angular_velocity != 0:
+            reward -= 0.01  # Castigo si hay velocidad angular
+
+        if done:
+            # Velocidades en 0's
+            self.action_pub.publish(7) # 7 es la acción que coloca en ceros las velocidades
+            
             # Recompensa cada vez que el agente se orienta mejor hacia el objetivo
-            reward += (abs(last_angle_to_goal) - abs(current_angle)) * 100
+            reward += (abs(last_angle_to_goal) - abs(current_angle)) * 10
 
             if self.collision:  # Si hubo una colisión
                 reward -= 20
-            # elif self.max_steps_reached:  # Si se alcanzó el número máximo de pasos
-            #     reward -= 20
             elif current_dist <= self.threshold_goal:  # Si se está a 10 cm o menos de la meta
                 if self.goal_index >= len(self.goals_axis_x):  # Si es el último objetivo
                     reward += 20
@@ -210,13 +214,10 @@ class R2TaskEnv(r2env_v1.R2Env):
                     pass
             else:
                 reward += 0  # Este caso no debería suceder, pero se deja por seguridad
-                print("Sí sucedió")
-        else:
-            # Recompensa mayor a medida que el agente se acerca más al objetivo
-            reward += (last_dist_to_goal - current_dist) * 100
 
+        else:
             # Recompensa cada vez que el agente se orienta mejor hacia el objetivo
-            reward += (abs(last_angle_to_goal) - abs(current_angle)) * 100
+            reward += (abs(last_angle_to_goal) - abs(current_angle)) * 10
 
             # Si se alcanzo uno de los objetivos (no final)
             if current_dist <= self.threshold_goal:

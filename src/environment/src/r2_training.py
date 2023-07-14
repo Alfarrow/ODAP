@@ -46,22 +46,32 @@ def main():
     net = Net(env.action_space.n).to(device)
     target_net = Net(env.action_space.n).to(device)
     #* Pesos guardados antes
-    # checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_573.pth')
-    # net.load_state_dict(checkpoint_net)
-    # print("<Checkpoints Net Cargados>")
+    checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_3_room_freeze.pth')
+    net.load_state_dict(checkpoint_net)
+    print("<Checkpoints Net Cargados>")
 
-    # checkpoint_target = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_573.pth')
-    # target_net.load_state_dict(checkpoint_target)
-    # print("<Checkpoints Target Cargados>")
+    checkpoint_target = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_3_room_freeze.pth')
+    target_net.load_state_dict(checkpoint_target)
+    print("<Checkpoints Target Cargados>")
+
+    # Activar esta parte si la red entrenada ya se ha entrenado para orientarse adecuadamente en un "empty world"
+    for param in net.LinearBranch.parameters():
+        param.requires_grad = False
+    for param in target_net.LinearBranch.parameters():
+        param.requires_grad = False
+
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=LEARNING_RATE)
+
 
     # Iniciar agente y experience replay
     buffer = ExperienceReplay(EXPERIENCE_REPLAY_SIZE)
     agente = DQN_Agent(env, buffer)
 
+
     #| Bucle de entrenamiento
     # Iniciar parámetros de entrenamiento
     epsilon = EPS_START
-    optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
+    # optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
     total_rewards = []
     numero_frame = 0                # Contador
   

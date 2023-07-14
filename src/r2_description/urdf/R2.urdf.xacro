@@ -3,7 +3,9 @@
 <robot name= "R2" xmlns:xacro="http://ros.org/wiki/xacro">
     <!--Incluir xacros-macros de enlaces y sensores-->
     <xacro:include filename="$(find odap)/src/r2_description/urdf/enlaces.xacro"/>
-    <xacro:include filename="$(find odap)/src/r2_description/urdf/lidar.xacro"/>   
+    <xacro:include filename="$(find odap)/src/r2_description/urdf/lidar.xacro"/>
+    <xacro:include filename="$(find odap)/src/r2_description/urdf/imu.xacro"/>
+
 
 <!--imu_link-->
   <link name="imu_link"/>
@@ -144,6 +146,11 @@
         <child link="laz_base"/>
         <origin xyz="0.012548 0.0 0.105"/>
     </joint>
+
+<!--|Sensor IMU-->
+    <xacro:imu_sensor parent_link="base_link">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:imu_sensor>
 
 <!--|Sensor de contacto-->
     <link name="base_bumper">

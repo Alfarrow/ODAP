@@ -5,10 +5,10 @@ Training:
   max_distance: 12.0
   num_lidar_measurements: 281
 # Task config
-  goals_axis_x: [1.5, -1.5]
-  goals_axis_y: [1.0, 1.0]
+  goals_axis_x: [4.5]
+  goals_axis_y: [-4.5]
   threshold_goal: 0.2
-  timestep_limit_per_episode: 2500
+  timestep_limit_per_episode: 5000
 # Condiciones para calificar el aprendizaje del agente
   mean_reward_bound: 15
   number_of_rewards_to_average: 10

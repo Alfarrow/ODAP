@@ -5,21 +5,48 @@ Training:
   max_distance: 12.0
   num_lidar_measurements: 281
 # Task config
-  goals_axis_x: [4.5]
-  goals_axis_y: [-4.5]
+  goals_axis_x: [3.5, -2.0]
+  goals_axis_y: [3.5, 1.0]
   threshold_goal: 0.2
-  timestep_limit_per_episode: 5000
+  timestep_limit_per_episode: 3500
 # Condiciones para calificar el aprendizaje del agente
-  mean_reward_bound: 15
+  mean_reward_bound: 3
   number_of_rewards_to_average: 10
 # Hiperparámetros de entrenamiento
   gamma: 0.99
   batch_size: 64
-  learning_rate: 0.00001
-  eps_start: 0.02
+  learning_rate: 0.000001
+  eps_start: 0.6
   eps_decay: 0.99998
   eps_min: 0.02
   exp_replay_size: 40000
   sync_target_network: 2000
-  #x: -9.0, y: 9.0
-  # 8000 para considerar que aprendió
+
+  #! 1a Tarea(empty.world)
+  # Sin obstáculos alcanzar el objetivo (aprender a orientarse)
+  #! 2a Tarea (little_room.world) (a partir de aquí congelar la rama de orientación)
+  # Con paredes alcanzar el objetivo con la rama de orientación congelada (reconocimiento de primeros patrones en la rama del lidar)
+  #! 3a Tarea (little_room.world)(creo que aquí se modificó la función de recompensas para movimientos más rectos)
+  # Con paredes alcanzar dos objetivos (aprender a orientarse en mayor variedad de ángulos/aprender a obedecer más a la orientación/ir más recto)
+  #! 4a Tarea (simple_obstacles.world)
+  #| Primer Intento
+  # Evadir Obstáculos (aprender a evadir obstáculos), se elige un objetivo sencillo (5.5, 4.0)
+  # mean_reward_bound: 16 creo que podría ser un buen valor o igual 15
+  
+  # Elegir nuevo objetivo en un ángulo trasero (-5.5, -4.0)
+  # mean_reward_bound: 25
+
+  # Doble objetivo (primero: (-5.0, -4.0) segundo: (-1.0, -3.5))
+  # mean_reward_bound: 15
+  #| Segundo Intento
+  #| Se cambió función de recompensas para castigar si se acerca mucho a un obstáculo
+  # Evadir Obstáculos (aprender a evadir obstáculos), se elige un objetivo sencillo (5.5, 4.0)
+  # mean_reward_bound: 9 creo que podría ser un buen valor
+
+  #| Otra modificación a la función de recompensas para que el castigo sea proporcional a la distancia mínima a un obstáculo
+  #| después de pasar el umbral (notar que había un error en la antigua función igual debido a que se castigaba a 5 metros o menos)
+  #| De nuevo un cambio a que sea a 1 metro no a 0.5 multiplicado por 0.01 en lugar de 0.1;
+  #| y además mayor recompensa por ir recto de 0.005 a 0.01
+  #| Cambio de LR a 1e-6
+  # Doble objetivo (primero: (3.5, 3.5) segundo: (-2.0, 1.0))
+  # mean_reward_bound: 3 

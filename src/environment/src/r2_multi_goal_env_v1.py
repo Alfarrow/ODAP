@@ -192,10 +192,17 @@ class R2TaskEnv(r2env_v1.R2Env):
 
         # Recompensa o castigo por doblar o no
         if self.latest_linear_velocity != 0 and self.latest_angular_velocity == 0:
-            reward += 0.005  # Recompensa si hay velocidad lineal pero no angular
+            reward += 0.01  # Recompensa si hay velocidad lineal pero no angular
 
         if self.latest_angular_velocity != 0:
             reward -= 0.01  # Castigo si hay velocidad angular
+
+        # Castigo si la observación del lidar indica un objeto a menos de 1 metros
+        positive_observations = [obs for obs in observations[2] if obs > 0]
+        if positive_observations:
+            min_distance = min(positive_observations)
+            if min_distance < 1.0:
+                reward -= (1.0 - min_distance) * 0.01
 
         if done:
             # Velocidades en 0's
@@ -206,7 +213,7 @@ class R2TaskEnv(r2env_v1.R2Env):
 
             if self.collision:  # Si hubo una colisión
                 reward -= 20
-            elif current_dist <= self.threshold_goal:  # Si se está a 10 cm o menos de la meta
+            elif current_dist <= self.threshold_goal:  # Si se está a 20 cm o menos de la meta
                 if self.goal_index >= len(self.goals_axis_x):  # Si es el último objetivo
                     reward += 20
                     print("Meta Final Alcanzada: +20")

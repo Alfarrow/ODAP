@@ -46,11 +46,11 @@ def main():
     net = Net(env.action_space.n).to(device)
     target_net = Net(env.action_space.n).to(device)
     #* Pesos guardados antes
-    checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_3_room_freeze.pth')
+    checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/checkpoint_520.pth')
     net.load_state_dict(checkpoint_net)
     print("<Checkpoints Net Cargados>")
 
-    checkpoint_target = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_3_room_freeze.pth')
+    checkpoint_target = torch.load('/home/alfarrow/trained_models/1st_training_orientation/checkpoint_520.pth')
     target_net.load_state_dict(checkpoint_target)
     print("<Checkpoints Target Cargados>")
 
@@ -99,7 +99,7 @@ def main():
             if len(total_rewards) % 20 == 0:
                 rospy.loginfo(f"Guardando el modelo en el episodio {len(total_rewards)}")
                 torch.save(net.state_dict(), f"/home/alfarrow/trained_models/checkpoint_{len(total_rewards)}.pth")
-                torch.save(target_net.state_dict(), f"/home/alfarrow/trained_models/checkpoint_target_{len(total_rewards)}.pth")
+                # torch.save(target_net.state_dict(), f"/home/alfarrow/trained_models/checkpoint_target_{len(total_rewards)}.pth")
 
             
             

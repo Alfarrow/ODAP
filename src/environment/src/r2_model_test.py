@@ -19,7 +19,7 @@ def main():
     net = Net(env.action_space.n).to(device)
     #* Pesos guardados antes
     # checkpoint_net = torch.load('/home/alfarrow/trained_models/Final_868.pth')
-    checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/checkpoint_620.pth')
+    checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_773.pth')
 
     net.load_state_dict(checkpoint_net)
     print("<Checkpoints Net Cargados>")
@@ -43,7 +43,6 @@ def main():
             action = int(act.item())
 
             next_obs, reward, done, _ = env.step(action)
-            print(reward)
 
             total_reward += reward
             obs = next_obs

@@ -5,10 +5,10 @@ Training:
   max_distance: 12.0
   num_lidar_measurements: 281
 # Task config
-  goals_axis_x: [3.5, -2.0]
-  goals_axis_y: [3.5, 1.0]
+  goals_axis_x: [0.0]
+  goals_axis_y: [13.0]
   threshold_goal: 0.2
-  timestep_limit_per_episode: 3500
+  timestep_limit_per_episode: 5000
 # Condiciones para calificar el aprendizaje del agente
   mean_reward_bound: 3
   number_of_rewards_to_average: 10
@@ -49,4 +49,4 @@ Training:
   #| y además mayor recompensa por ir recto de 0.005 a 0.01
   #| Cambio de LR a 1e-6
   # Doble objetivo (primero: (3.5, 3.5) segundo: (-2.0, 1.0))
-  # mean_reward_bound: 3 
+  # mean_reward_bound: 3 (Creo que puedo aumentarlo pues dio 8 de promedio)

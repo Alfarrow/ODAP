@@ -19,7 +19,7 @@ def main():
     net = Net(env.action_space.n).to(device)
     #* Pesos guardados antes
     # checkpoint_net = torch.load('/home/alfarrow/trained_models/Final_868.pth')
-    checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_773.pth')
+    checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_4_2_I2.pth')
 
     net.load_state_dict(checkpoint_net)
     print("<Checkpoints Net Cargados>")
@@ -27,7 +27,8 @@ def main():
 
     rospy.loginfo("|------|Evaluación Comenzada|-----|")
 
-    while True:
+    # while True:
+    for i in range(10):
         done = False
         obs = env.reset()
         total_reward = 0

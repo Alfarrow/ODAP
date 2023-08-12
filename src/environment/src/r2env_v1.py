@@ -35,6 +35,9 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
         
         # Crear publicador
         self.action_pub = rospy.Publisher('/action', Int32, queue_size=1)
+        self.reset_pub = rospy.Publisher('/environment_reset', Bool, queue_size=1)
+        self.success_pub = rospy.Publisher('/total_success', Int32, queue_size=1)
+        self.fail_pub = rospy.Publisher('/total_fails', Int32, queue_size=1)
 
         # Crear suscriptores
         rospy.Subscriber("/R2/scan", LaserScan, self._laser_scan_callback)
@@ -51,6 +54,10 @@ class R2Env(robot_gazebo_env.RobotGazeboEnv):
         self.laser_scan_buffer = deque(maxlen=3)
         self.distance_buffer = deque(maxlen=3)
         self.orientation_buffer = deque(maxlen=3)
+
+        # Variables de éxitos y fallas
+        self.success = 0
+        self.fails = 0
 
         # Revisar que todo esté listo
         self._check_all_systems_ready()

@@ -132,6 +132,9 @@ class R2TaskEnv(r2env_v1.R2Env):
         self.distance_buffer.append(self.last_dist_to_goal)
         self.orientation_buffer.append(self.last_angle_to_goal)
 
+        # Publicar que se hizo reset
+        self.reset_pub.publish(True)
+
     #| Publica las velocidades según la acción elegida
     def _set_action(self, action):
         self.cumulated_steps += 1  # Incrementa el número de pasos realizados
@@ -213,11 +216,20 @@ class R2TaskEnv(r2env_v1.R2Env):
 
             if self.collision:  # Si hubo una colisión
                 reward -= 20
+                self.fails += 1
+                self.success_pub.publish(self.success)
+                self.fail_pub.publish(self.fails)
             elif current_dist <= self.threshold_goal:  # Si se está a 20 cm o menos de la meta
                 if self.goal_index >= len(self.goals_axis_x):  # Si es el último objetivo
                     reward += 20
+                    self.success += 1
+                    self.success_pub.publish(self.success)
+                    self.fail_pub.publish(self.fails)
                     print("Meta Final Alcanzada: +20")
                 else:
+                    self.fails += 1
+                    self.success_pub.publish(self.success)
+                    self.fail_pub.publish(self.fails)
                     pass
             else:
                 reward += 0  # Este caso no debería suceder, pero se deja por seguridad

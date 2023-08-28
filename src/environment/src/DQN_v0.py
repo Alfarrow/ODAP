@@ -115,8 +115,8 @@ def encode_orientation(orientation):
     # Convert orientation from radians to degrees and take absolute value
     orientation_degrees = abs(np.degrees(orientation))
 
-    # Map orientation from [0, 180] to [0, 179]
-    index = int(orientation_degrees // 2)
+    # Calculate index
+    index = int(orientation_degrees)
 
     # Create one-hot encoded vector
     one_hot = np.zeros(181)  # 180 for orientation + 1 for sign

@@ -8,10 +8,10 @@ import time
 
 # Configuración inicial para Matplotlib
 fig, ax = plt.subplots()
-ax.set_xlim([-7, 7])
-ax.set_ylim([-7, 7])
+ax.set_xlim([-9, 9])
+ax.set_ylim([-9, 9])
 ax.set_title('Trayectoria del Robot en Gazebo')
-line, = ax.plot([], [], 'ro')  # Línea roja para la trayectoria
+line, = ax.plot([], [], 'ro', markersize=4)  # Línea roja para la trayectoria
 ax.grid(True)
 
 trajectory_x = []

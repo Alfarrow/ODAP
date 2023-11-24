@@ -5,48 +5,78 @@ Training:
   max_distance: 12.0
   num_lidar_measurements: 281
 # Task config
-  goals_axis_x: [3.5]
-  goals_axis_y: [-3.5]
-  threshold_goal: 0.3
-  timestep_limit_per_episode: 5000
+  # goals_axis_x: [-2.0]
+  # goals_axis_y: [-1.0]
+  # init_poses_x: [-7.0, 7.0, 7.0]
+  # init_poses_y: [-4.0, -5.0, 3.5]
+  # init_poses_orientation_z: [0.9613, 0.7, 0.9613]
+  # init_poses_orientation_w: [0.2756, 0.7, -0.2756]
+  goals_axis_x: [-2.0, -1.0, -6.0]
+  goals_axis_y: [-2.0, 4.0, 3.0]
+  init_poses_x: [-4.0]
+  init_poses_y: [3.0]
+  init_poses_orientation_z: [0.0]
+  init_poses_orientation_w: [1.0]
+  threshold_goal: 0.4
+  timestep_limit_per_episode: 3000
 # Condiciones para calificar el aprendizaje del agente
-  mean_reward_bound: 3
+  mean_reward_bound: 23
   number_of_rewards_to_average: 10
 # Hiperparámetros de entrenamiento
   gamma: 0.99
   batch_size: 64
-  learning_rate: 0.000001
-  eps_start: 0.6
-  eps_decay: 0.99998
+  learning_rate: 0.00001
+  eps_start: 0.2
+  eps_decay: 0.999987
   eps_min: 0.02
   exp_replay_size: 40000
   sync_target_network: 2000
 
-  #! 1a Tarea(empty.world)
-  # Sin obstáculos alcanzar el objetivo (aprender a orientarse)
-  #! 2a Tarea (little_room.world) (a partir de aquí congelar la rama de orientación)
-  # Con paredes alcanzar el objetivo con la rama de orientación congelada (reconocimiento de primeros patrones en la rama del lidar)
-  #! 3a Tarea (little_room.world)(creo que aquí se modificó la función de recompensas para movimientos más rectos)
-  # Con paredes alcanzar dos objetivos (aprender a orientarse en mayor variedad de ángulos/aprender a obedecer más a la orientación/ir más recto)
-  #! 4a Tarea (simple_obstacles.world)
-  #| Primer Intento
-  # Evadir Obstáculos (aprender a evadir obstáculos), se elige un objetivo sencillo (5.5, 4.0)
-  # mean_reward_bound: 16 creo que podría ser un buen valor o igual 15
-  
-  # Elegir nuevo objetivo en un ángulo trasero (-5.5, -4.0)
-  # mean_reward_bound: 25
 
-  # Doble objetivo (primero: (-5.0, -4.0) segundo: (-1.0, -3.5))
-  # mean_reward_bound: 15
-  #| Segundo Intento
-  #| Se cambió función de recompensas para castigar si se acerca mucho a un obstáculo
-  # Evadir Obstáculos (aprender a evadir obstáculos), se elige un objetivo sencillo (5.5, 4.0)
-  # mean_reward_bound: 9 creo que podría ser un buen valor
+#? Parameters----------------------------------------------------------------------------------------------------
+#?-------------------------------------------------------------------------------------------------------------
+  #! 1a Tarea(empty.world) Sin obstáculos alcanzar el objetivo (aprender a orientarse)
+  #| Primera parte un objetivo
+  # eps_start: 0.9999
+  # learning_rate: 1e-6
+  # timesteps = 700
+  # Objetivo (2.0, 1.5)
+  # mean_reward = 16
+  #| Segunda parte dos objetivos (se hizo una primera vez con resultados regulares, posteriormente
+  #| se subió el mean_reward a 20 y se obtuvieron comportamientos distintos pero que siempre alcanzan la meta)
+  # eps_start: 0.4
+  # learning_rate: 1e-6
+  # timesteps = 2000
+  # Objetivos (2.0, 1.5) y (-1.0, -1.0)
+  # mean_reward = 16 y 20
 
-  #| Otra modificación a la función de recompensas para que el castigo sea proporcional a la distancia mínima a un obstáculo
-  #| después de pasar el umbral (notar que había un error en la antigua función igual debido a que se castigaba a 5 metros o menos)
-  #| De nuevo un cambio a que sea a 1 metro no a 0.5 multiplicado por 0.01 en lugar de 0.1;
-  #| y además mayor recompensa por ir recto de 0.005 a 0.01
-  #| Cambio de LR a 1e-6
-  # Doble objetivo (primero: (3.5, 3.5) segundo: (-2.0, 1.0))
-  # mean_reward_bound: 3 (Creo que puedo aumentarlo pues dio 8 de promedio)
+  #! 2a Tarea(little_room_doors.world) (a partir de aquí congelar la rama de orientación y la joined)
+  # eps_start: 0.9999
+  # learning_rate: 1e-5
+  # timesteps = 3000
+  # Objetivo (-2.0, -1.0)
+  # init_poses_x: [-5.0, -7.0]  # Lista de coordenadas x para las poses iniciales
+  # init_poses_y: [3.0, -4.0]  # Lista de coordenadas y para las poses iniciales
+  # init_poses_orientation_z: [0.0, 0.9613]  # Orientaciones z para las poses iniciales
+  # init_poses_orientation_w: [1.0, 0.2756]  # Orientaciones w para las poses iniciales
+  # mean_reward = 15 (max 17)
+
+  #! 3a Tarea  (little_room_doors.world)
+  # threshold_goal: 0.3
+  # eps_start: 0.4
+  # eps_decay: 0.999987
+  # learning_rate: 1e-5
+  # timesteps = 3000
+  # exp_replay_size: 40000
+  # sync_target_network: 2000
+  # Objetivos: (-2.0, -1.0)
+  # mean_reward = 20 (max 22)
+  # init_poses_x: [-5.0, -7.0, 7.0, 7.0]
+  # init_poses_y: [3.0, -4.0, -5.0, 3.5]
+  # init_poses_orientation_z: [0.0, 0.9613, 0.7, 0.9613]
+  # init_poses_orientation_w: [1.0, 0.2756, 0.7, -0.2756]
+
+#? TEST
+  #| 1o Little Room
+  # x: 5.5 y: 4.0
+  # Se repite la equivalencia de estas coordenadas en todos los cuadrantes

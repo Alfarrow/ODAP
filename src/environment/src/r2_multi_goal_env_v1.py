@@ -55,6 +55,13 @@ class R2TaskEnv(r2env_v1.R2Env):
         self.max_episode_steps = get_param('Training/timestep_limit_per_episode')
 
         # Cargar configuración de entrenamiento
+        #* Cargar poses iniciales desde el archivo .yaml
+        self.init_poses_x = get_param('Training/init_poses_x')
+        self.init_poses_y = get_param('Training/init_poses_y')
+        self.init_poses_orientation_z = get_param('Training/init_poses_orientation_z')
+        self.init_poses_orientation_w = get_param('Training/init_poses_orientation_w')
+        self.init_pose_index = 0  # Índice para la pose inicial actual
+
         #* Meta
         self.goals_axis_x = get_param('Training/goals_axis_x')
         self.goals_axis_y = get_param('Training/goals_axis_y')
@@ -73,31 +80,42 @@ class R2TaskEnv(r2env_v1.R2Env):
 
     #| Establece la pose inicial del robot
     def _set_init_pose(self):
-        """Sets the Robot in its init pose
-        """
+        """Sets the Robot in its init pose based on the current index from the yaml file."""
         rospy.wait_for_service('/gazebo/set_model_state')
+        
         try:
             set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
             state_msg = ModelState()
             state_msg.model_name = 'R2'  # Asegúrate de que 'R2' es el nombre correcto del modelo
-            state_msg.pose.position.x = 0.0
-            state_msg.pose.position.y = 0.0
+            
+            # Asignar posición inicial basada en el índice actual
+            state_msg.pose.position.x = self.init_poses_x[self.init_pose_index]
+            state_msg.pose.position.y = self.init_poses_y[self.init_pose_index]
             state_msg.pose.position.z = 0.0
-            state_msg.pose.orientation.x = 0.0
-            state_msg.pose.orientation.y = 0.0
-            state_msg.pose.orientation.z = 0.0
-            state_msg.pose.orientation.w = 1.0
+            
+            # Asignar orientación inicial basada en el índice actual
+            state_msg.pose.orientation.x = 0.0  # Puedes modificar esto si en algún momento quieres cambiar la orientación en el eje X
+            state_msg.pose.orientation.y = 0.0  # Igual para el eje Y
+            state_msg.pose.orientation.z = self.init_poses_orientation_z[self.init_pose_index]
+            state_msg.pose.orientation.w = self.init_poses_orientation_w[self.init_pose_index]
+            
             state_msg.reference_frame = 'world'
+            
             resp = set_state(state_msg)
             
-            if resp.success:  # check if the call was successful
+            # Verificar si la llamada fue exitosa y actualizar el índice para la próxima pose inicial
+            if resp.success:
                 rospy.loginfo("Model successfully set to initial pose")
+                self.init_pose_index += 1  # Incrementar el índice para la siguiente pose inicial
+                if self.init_pose_index >= len(self.init_poses_x):  # Si hemos pasado por todas las poses iniciales
+                    self.init_pose_index = 0  # Reiniciar el índice
             else:
                 rospy.logerr("Failed to set the model to initial pose")
         except rospy.ServiceException as e:
             rospy.logerr("Service call failed: %s" % e)
 
         return True
+
    
     #| Variables que se inicializarán al comenzar un episodio
     def _init_env_variables(self):
@@ -126,8 +144,8 @@ class R2TaskEnv(r2env_v1.R2Env):
         self.collision = False
 
         # Valores por defecto para los bufferes
-        default_value_laser_scan = np.full((self.num_lidar_measurements,), -1.0) # reemplazar num_lidar_measurements con la dimensión de tus datos láser
-        self.laser_scan_buffer.append(default_value_laser_scan.tolist())  # Asegúrate de convertir la matriz numpy a lista con .tolist()
+        default_value_laser_scan = np.full((self.num_lidar_measurements,), -1.0)
+        self.laser_scan_buffer.append(default_value_laser_scan.tolist())
 
         self.distance_buffer.append(self.last_dist_to_goal)
         self.orientation_buffer.append(self.last_angle_to_goal)

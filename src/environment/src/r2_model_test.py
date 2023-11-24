@@ -18,8 +18,10 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = Net(env.action_space.n).to(device)
     #* Pesos guardados antes
-    # checkpoint_net = torch.load('/home/alfarrow/trained_models/Final_868.pth')
-    checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/Final_4_2_I2.pth')
+    # checkpoint_net = torch.load('/home/alfarrow/trained_models/checkpoint_1720.pth')
+
+    # checkpoint_net = torch.load('/home/alfarrow/trained_models/3rd_odap/Final_1.pth')
+    checkpoint_net = torch.load('/home/alfarrow/trained_models/3rd_odap/Final_2.pth')
 
     net.load_state_dict(checkpoint_net)
     print("<Checkpoints Net Cargados>")

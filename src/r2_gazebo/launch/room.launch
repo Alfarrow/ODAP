@@ -1,15 +1,10 @@
 <launch>
+    <arg name="gui" default="true"/>
     <arg name="namespace" default="/"/>
-    <arg name="world" default="$(find odap)/src/r2_gazebo/worlds/little_room.world"/>
+    <!-- <arg name="world" default="$(find odap)/src/r2_gazebo/worlds/little_room_doors.world"/> -->
+    <!-- <arg name="world" default="$(find odap)/src/r2_gazebo/worlds/big_room.world"/> -->
+    <arg name="world" default="$(find odap)/src/r2_gazebo/worlds/extra.world"/>
 
-
-    <!--Pose del Vehículo-->
-    <arg name="x" default="0.0"/>
-    <arg name="y" default="0.0"/>
-    <arg name="z" default="0.01"/>
-    <arg name="roll" default="0.0"/>
-    <arg name="pitch" default="0.0"/>
-    <arg name="yaw" default="0.0"/>
 
     <!--Cargar otro el launch del robot-->
     <include file="$(find odap)/src/r2_description/launch/R2.launch">
@@ -22,15 +17,14 @@
     <group ns="$(arg namespace)">
         <!-- Crear mundo -->
         <include file="$(find gazebo_ros)/launch/empty_world.launch">
+            <arg name="gui" value="$(arg gui)"/>
             <arg name="world_name" value="$(arg world)"/>
         </include>
 
         <!--Cargar el vehículo-->
         <node name="spawn_vehicle" pkg="gazebo_ros" type="spawn_model"
             args="-urdf -param robot_description -model R2
-            -gazebo_namespace /$(arg namespace)/gazebo
-            -x $(arg x) -y $(arg y) -z $(arg z)
-            -R $(arg roll) -P $(arg pitch) -Y $(arg yaw)"/>
+            -gazebo_namespace /$(arg namespace)/gazebo"/>
 
         <!--Nodo Controller Spawner-->
         <node name="controller_spawner" pkg="controller_manager" type="spawner"

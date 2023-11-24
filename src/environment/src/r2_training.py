@@ -45,23 +45,31 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = Net(env.action_space.n).to(device)
     target_net = Net(env.action_space.n).to(device)
-    #* Pesos guardados antes
-    checkpoint_net = torch.load('/home/alfarrow/trained_models/1st_training_orientation/checkpoint_520.pth')
+    #* Cargar los pesos guardados
+    checkpoint_net = torch.load('/home/alfarrow/trained_models/3rd_odap/2nd_1.pth')
     net.load_state_dict(checkpoint_net)
     print("<Checkpoints Net Cargados>")
 
-    checkpoint_target = torch.load('/home/alfarrow/trained_models/1st_training_orientation/checkpoint_520.pth')
+    checkpoint_target = torch.load('/home/alfarrow/trained_models/3rd_odap/2nd_1.pth')
     target_net.load_state_dict(checkpoint_target)
     print("<Checkpoints Target Cargados>")
 
+    # Congelar rama de orientación y la joined.
     # Activar esta parte si la red entrenada ya se ha entrenado para orientarse adecuadamente en un "empty world"
     for param in net.LinearBranch.parameters():
         param.requires_grad = False
+    # for param in net.joined_layer.parameters():
+    #     param.requires_grad = False
     for param in target_net.LinearBranch.parameters():
         param.requires_grad = False
+    # for param in target_net.joined_layer.parameters():
+    #     param.requires_grad = False
 
+    # Si se congela la rama        
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=LEARNING_RATE)
 
+    # Si la rama no está congelada
+    # optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
 
     # Iniciar agente y experience replay
     buffer = ExperienceReplay(EXPERIENCE_REPLAY_SIZE)
@@ -71,7 +79,6 @@ def main():
     #| Bucle de entrenamiento
     # Iniciar parámetros de entrenamiento
     epsilon = EPS_START
-    # optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
     total_rewards = []
     numero_frame = 0                # Contador
   

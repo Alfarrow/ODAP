@@ -1,0 +1,53 @@
+<launch>
+  <arg name="serial_no"           default=""/>
+  <arg name="usb_port_id"         default=""/>
+  <arg name="device_type"         default=""/>
+  <arg name="json_file_path"      default=""/>
+  <arg name="camera"              default="camera"/>
+  <arg name="tf_prefix"           default="$(arg camera)"/>
+  <arg name="external_manager"    default="false"/>
+  <arg name="manager"             default="realsense2_camera_manager"/>
+  <arg name="output"              default="screen"/>
+  <arg name="respawn"             default="false"/>
+  
+  <arg name="enable_depth"        default="true"/>
+  <arg name="enable_color"        default="false"/>
+  <arg name="enable_pointcloud"   default="true"/>
+  
+  <!-- Agregar estos argumentos para reducir la resoluci贸n del sensor de profundidad -->
+  <arg name="depth_width"         default="480"/>
+  <arg name="depth_height"        default="270"/>
+
+  <!-- Agregar este argumento para configurar los FPS -->
+  <arg name="depth_fps" default="5"/>
+  
+  <!-- Agregar este argumento para desactivar la textura en la nube de puntos -->
+  <arg name="pointcloud_texture_stream" default="RS2_STREAM_ANY"/>
+
+  <group ns="$(arg camera)">
+    <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
+      <arg name="tf_prefix"                value="$(arg tf_prefix)"/>
+      <arg name="external_manager"         value="$(arg external_manager)"/>
+      <arg name="manager"                  value="$(arg manager)"/>
+      <arg name="output"                   value="$(arg output)"/>
+      <arg name="respawn"                  value="$(arg respawn)"/>
+      <arg name="serial_no"                value="$(arg serial_no)"/>
+      <arg name="usb_port_id"              value="$(arg usb_port_id)"/>
+      <arg name="device_type"              value="$(arg device_type)"/>
+      <arg name="json_file_path"           value="$(arg json_file_path)"/>
+      <arg name="enable_pointcloud"        value="$(arg enable_pointcloud)"/>
+      <arg name="enable_depth"             value="$(arg enable_depth)"/>
+      <arg name="enable_color"             value="$(arg enable_color)"/>
+      
+      <!-- Agregar estos argumentos para pasar la nueva resoluci贸n al nodo -->
+      <arg name="depth_width"              value="$(arg depth_width)"/>
+      <arg name="depth_height"             value="$(arg depth_height)"/>
+
+      <!-- Agregar este argumento para pasar los FPS al nodo -->
+      <arg name="depth_fps" value="$(arg depth_fps)"/>
+      
+      <!-- Agregar este argumento para desactivar la textura en la nube de puntos -->
+      <arg name="pointcloud_texture_stream" value="$(arg pointcloud_texture_stream)"/>
+    </include>
+  </group>
+</launch>

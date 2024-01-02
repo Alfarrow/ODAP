@@ -1,0 +1,26 @@
+<launch>
+
+    <!-- Iniciar el nodo de la c谩mara RealSense -->
+    <include file="$(find odap)/launch/realsense_custom.launch"> </include>
+
+  <!-- Depth Image to Laser Scan Node -->
+  <node name="depthimage_to_laserscan" pkg="depthimage_to_laserscan" type="depthimage_to_laserscan" args="">
+
+    <!-- Cambia aquí para el nombre del tópico de profundidad de tu cámara RealSense. 
+         Por ejemplo, si tu cámara publica la imagen de profundidad en /camera/depth/image_raw -->
+    <remap from="image"       to="/camera/depth/image_rect_raw"/>
+
+    <!-- El remapeo para camera_info usa el mismo camino que se da al tópico de imagen.
+         Por ejemplo, si la información de la cámara se publica en /camera/depth/camera_info -->
+    <remap from="camera_info" to="/camera/depth/camera_info"/> 
+
+    <!-- Ajusta los siguientes parámetros según tus necesidades y las especificaciones de tu cámara RealSense -->
+    <param name="scan_height"     type="int"    value="1"/>
+    <param name="scan_time"       type="double" value="0.033"/>
+    <param name="range_min"       type="double" value="0.45"/>
+    <param name="range_max"       type="double" value="10.0"/>
+    <param name="output_frame_id" type="str"    value="camera_depth_frame"/>
+	
+  </node>
+	
+</launch>

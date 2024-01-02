@@ -28,6 +28,6 @@ Algunas de las trayectorias generadas posterior al entrenamiento se observan aqu
 **Trayectoria 2**
 ![R2 Lidar](images/trayectoria.gif)
 
-**Trayectoria 3**
+**Por último se probó en el robot físico**
 ![R2 Lidar](images/lidar1.gif)
 
